@@ -22,7 +22,7 @@ presel = CutClass ("presel", [
                               ["MET200","met>200"],
                               ["ISR110","nJet110>=1" ],
                               ["HT300","htJet30j>300"],
-                              ["2ndJetPt60","nJet60<=2 "],
+                              #["2ndJetPt60","nJet60<=2 "],
                               ["AntiQCD", "deltaPhi_j12 < 2.5" ],
                               ["singleLep",    "nlep==1"  ],
                             ] ,
@@ -33,22 +33,23 @@ preselection = presel.combined
 
 
 sr1   = CutClass ("sr1",    [
+                              ["MuPt30","lepPt<30"],
                               ["negMuon","lepPdgId==13"],
                               ["MuEta1.5","abs(lepEta)<1.5"],
-                              ["BVeto_Medium25","nBJetMedium25==0"],
-                              ["MuPt30","lepPt<30"],
-                              ["met300","met>300"],
+                              ["BVeto","(nSoftBJetsCSV == 0 && nHardBJetsCSV ==0)"],
+                              #["BVeto_Medium25","nBJetMedium25==0"],
                               ["HT400","htJet30j>400"],
+                              ["met300","met>300"],
                            ] , 
                   baseCut = presel,
                   )
 
 
-sr1Loose   = CutClass ("sr1_loose",    [
+sr1Loose   = CutClass ("sr1Loose",    [
+                              ["MuPt30","lepPt<30"],
                               ["negMuon","lepPdgId==13"],
                               ["MuEta1.5","abs(lepEta)<1.5"],
-                              ["BVeto_Medium25","nBJetMedium25==0"],
-                              ["MuPt30","lepPt<30"],
+                              ["BVeto","(nSoftBJetsCSV == 0 && nHardBJetsCSV ==0)"],
                               #["met300","met>300"],
                               #["HT400","htJet30j>400"],
                            ] , 
@@ -75,11 +76,23 @@ sr1abc   = CutClass ("sr1abc",    [
 
 
   
+sr2      = CutClass ("sr2",   [
+                                ["MuPt30","lepPt<30"],
+                                ["Jet325","nJet325>0"],
+                                ["met300","met>300"],
+                                ["OneOrMoreSoftB","nSoftBJetsCSV>=1"],
+                                ["noHardB","nHardBJetsCSV==0"],
+                              ],
+                  baseCut = presel,
+                  )
 
 
 
-
-
-
-
+sr2pt   = CutClass ("sr2pt",    [
+                                  ["SR2_1",  btw("lepPt",5,12)    ],
+                                  ["SR2_2",  btw("lepPt",12,20)   ],
+                                  ["SR2_3",  btw("lepPt",20,30)   ],
+                           ] , 
+                  baseCut = sr2,
+                  )
 
