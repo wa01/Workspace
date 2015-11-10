@@ -93,11 +93,8 @@ def isNotJetTrack(gp, isrList,drMax):
   trfl = True
   for isr in isrList:
     dR = deltaR(gp,isr)
-    #print dR
     if dR < drMax:
-      #trfl = isr['pt']
       trfl = False
-      #print trfl, dR
       break
   return trfl
 
@@ -126,6 +123,9 @@ def drawTracks(tree,iEvt):
 #          if part['pt'] > trkPt:
 #            ntrks[isrPt][drMax][trkPt]+=1
 #  return ntrks
+
+
+
 
 
 def countNonIsrTracks(parts,isrJets,isrPtList,drList,trkPtList,debug=False,trackCheck=None):
@@ -162,13 +162,6 @@ def countNonIsrTracksInHemis(parts,isrJets,isrPtList,hemiList,nIsrList,trkPtList
                     ntrks[isrPt][hemi][nIsr][trkPt]+=1
   return ntrks
 
-
-
-
-
-#trackQual = lambda part: part['pt'] > min(trkPtList) and abs(part['eta']) < 2.5 and abs(part['charge']) > 0
-
-
 def countNonIsrRecoTracksInHemis(parts,isrJets,isrPtList,hemiList,nIsrList,trkPtList,drMax=0.4,debug=False,cosines={}):
   ntrks = { isrPt:makeDict(hemiList,nIsrList,trkPtList) for isrPt in isrPtList}
   for part in parts:    
@@ -184,8 +177,6 @@ def countNonIsrRecoTracksInHemis(parts,isrJets,isrPtList,hemiList,nIsrList,trkPt
                   if part['pt'] > trkPt:
                     ntrks[isrPt][hemi][nIsr][trkPt]+=1
   return ntrks
-
-
 
 def makeDict(l1, l2, l3, defVal=0):
   ret={}
