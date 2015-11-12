@@ -15,11 +15,12 @@ from Workspace.HEPHYPythonTools.user import username,afsDataName
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_packedGenPart_tracks import *
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Data25ns import *
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Data25ns_fromArtur import *
-from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 import time
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_50ns import *
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Data50ns_1l import *
 #from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_v1 import *
+from Workspace.DegenerateStopAnalysis.cmgTuples_Data25ns import *
+from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 
 target_lumi = 10000 #pb-1
 lepton_soft_hard_cut  = 30
@@ -28,12 +29,15 @@ pkdGenParts = False
 verbose = False
 break_for_debug = False
 defSampleStr = "T2DegStop_300_270"
-subDir = "postProcessed_7412pass2_test"
+subDir = "postProcessed_7412pass2__v3"
 
 
 ROOT.gSystem.Load("libFWCoreFWLite.so")
 ROOT.AutoLibraryLoader.enable()
 
+
+def capitalize(line):
+  return ' '.join(s[0].upper() + s[1:] for s in line.split(' '))
 
 
 #branchKeepStrings = ["run", "lumi", "evt", "isData", "xsec", "puWeight", "nTrueInt", "genWeight", "rho", "nVert", "nJet25", "nBJetLoose25", "nBJetMedium25", "nBJetTight25", "nJet40", "nJet40a", "nBJetLoose40", "nBJetMedium40", "nBJetTight40", 
@@ -134,10 +138,10 @@ if options.preselect:
 
 if options.skim.lower()=='lhehthi':  
   print "Applying lheHTIncoming >=600     ---- you better know why!"
-  skimCond += "lheHTIncoming>=600"
+  skimCond += "&& (lheHTIncoming>=600)"
 if options.skim.lower()=='lhehtlow':
   print "Applying lheHTIncoming < 600     ---- you better know why!"
-  skimCond += "lheHTIncoming<600"
+  skimCond += "&& (lheHTIncoming<600)"
 
 
 print "SkimCondition:"
@@ -386,7 +390,7 @@ for isample, sample in enumerate(allSamples):
             lep= selectedLeptons[0]
             lepName = "lep"
             for var in varsToKeep:
-              varName = lepName + var.title()
+              varName = lepName + capitalize(var)
               setattr(s,varName,lep[var])
             s.lepAbsIso = lep['relIso04']*lep['pt'] 
 
@@ -529,6 +533,21 @@ for isample, sample in enumerate(allSamples):
                 s.J3Mass    =  jt.M()
             #s.dRJetHBLep =
             #s.jetHBpt
+          s.nBJetMediumCSV30 = len(bJetsCSV)
+          #print "nbjetsCMVA:" , s.nBJetMediumCMVA30  ,"nbjetsCSV:" ,  s.nBJetMediumCSV30
+          s.deltaPhi_Wl = acos((s.leptonPt+r.met_pt*cos(s.leptonPhi-r.met_phi))/sqrt(s.leptonPt**2+r.met_pt**2+2*r.met_pt*s.leptonPt*cos(s.leptonPhi-r.met_phi))) 
+          s.Q80         = 1-80**2/(2*s.lepPt*r.met_pt)
+          s.CosLMet     = cos(s.lepPhi-r.met_phi)
+          s.mt          = sqrt( 2* s.lepPt * r.met_pt *( 1- s.CosLMet  ))
+          
+          if s.nJet60 == 0:
+            s.deltaPhi_j12 = 999
+            #print "#################################"
+            #print s.nJet60, s.deltaPhi_j12
+          elif s.nJet60 == 1:
+            s.deltaPhi_j12 = 0
+          else:
+            s.deltaPhi_j12 = min( 2*pi- abs(jets60[1]['phi'] - jets60[0]['phi'] ) ,  abs(jets60[1]['phi'] - jets60[0]['phi'] ) )
 
         ###############################       track variables
         if tracks:
@@ -634,26 +653,7 @@ for isample, sample in enumerate(allSamples):
 
 ########################################################
 
-#         s.nBJetMediumCMVA30 = len(bJetsCMVA)
-          s.nBJetMediumCSV30 = len(bJetsCSV)
-          #print "nbjetsCMVA:" , s.nBJetMediumCMVA30  ,"nbjetsCSV:" ,  s.nBJetMediumCSV30
-          #s.mt2w = mt2w.mt2w(met = {'pt':r.met_pt, 'phi':r.met_phi}, l={'pt':s.leptonPt, 'phi':s.leptonPhi, 'eta':s.leptonEta}, ljets=lightJets, bjets=bJetsCSV)
-          s.deltaPhi_Wl = acos((s.leptonPt+r.met_pt*cos(s.leptonPhi-r.met_phi))/sqrt(s.leptonPt**2+r.met_pt**2+2*r.met_pt*s.leptonPt*cos(s.leptonPhi-r.met_phi))) 
-          #s.Q80         = 1-80**2/(2*s.leptonPt*r.met_pt)
-          #s.CosLMet     = cos(s.leptonPhi-r.met_phi)
-          #s.mt          = sqrt( 2* s.leptonPt * r.met_pt *( 1- s.CosLMet  ))
-          s.Q80         = 1-80**2/(2*s.lepPt*r.met_pt)
-          s.CosLMet     = cos(s.lepPhi-r.met_phi)
-          s.mt          = sqrt( 2* s.lepPt * r.met_pt *( 1- s.CosLMet  ))
-          
-          if s.nJet60 == 0:
-            s.deltaPhi_j12 = 999
-            #print "#################################"
-            #print s.nJet60, s.deltaPhi_j12
-          elif s.nJet60 == 1:
-            s.deltaPhi_j12 = 0
-          else:
-            s.deltaPhi_j12 = min( 2*pi- abs(jets60[1]['phi'] - jets60[0]['phi'] ) ,  abs(jets60[1]['phi'] - jets60[0]['phi'] ) )
+
           
                  
           #print "deltaPhi:" , s.deltaPhi_Wl
