@@ -132,7 +132,11 @@ if options.skim=='inc':
   skimCond = "(1)"
 if options.preselect:
   #preselection = "(met_pt > 200 && Jet_pt[0]> 100 && Sum$(Jet_pt)>200 )"
-  preselection = "(met_pt > 100 && Jet_pt[0]> 80 && Sum$(Jet_pt)>100 )"
+  metCut = "(met_pt>200)"
+  leadingJet110 = "((Max$(Jet_pt*(abs(Jet_eta)<2.4 && Jet_id) ) >100) >=1)"
+  HTCut    = "(Sum$(Jet_pt*(Jet_pt>30 && abs(Jet_eta)<2.4 && (Jet_id)))>200)"
+  preselection = "(%s)"%'&&'.join([metCut,leadingJet110,HTCut])
+
   print "Applying Preselection", preselection
   skimCond += "&&%s"%preselection
 
@@ -385,7 +389,7 @@ for isample, sample in enumerate(allSamples):
           #print "tightHardLep" , tightHardLep 
           leadingLepInd = None
 
-          varsToKeep = vars +[]
+          varsToKeep = vars + []
           if selectedLeptons:
             lep= selectedLeptons[0]
             lepName = "lep"
@@ -393,6 +397,8 @@ for isample, sample in enumerate(allSamples):
               varName = lepName + capitalize(var)
               setattr(s,varName,lep[var])
             s.lepAbsIso = lep['relIso04']*lep['pt'] 
+            s.nlep = len(selectedLeptons)
+            s.singleLeptonic = s.nlep == 1
 
           #for lep in selectedLeptons:
           #if selectedLepGoods:
