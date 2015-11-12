@@ -5,23 +5,6 @@ data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
 
 
 
-def makeSample (cmgMCcomponent,skimAnalyzerDir="skimAnalyzerCount", rootFileLocation="tree.root", treeName="tree"):
-  sample = cmgMCcomponent
-  d = {
-        "cmgMCcomp":sample,
-        "name" : sample.name,
-        "chunkString":sample.name,
-        "dir": data_path,
-        "dbsName" : sample.dataset,
-        "skimAnalyzerDir":skimAnalyzerDir,
-        "rootFileLocation":rootFileLocation,
-        "treeName":treeName,
-        'isData':sample.isData,
-        }
-  return d
-
-
-
 #for sample in samples:
 # exec(sample.name + "=makeSample(sample)")
 
@@ -184,10 +167,15 @@ WJetsToLNu_HT2500toInf ={\
 }
 
 
+TTJets = [TTJets_LO, TTJets_LO_HT600to800, TTJets_LO_HT800to1200, TTJets_LO_HT1200to2500, TTJets_LO_HT2500toInf]
+WJetsInc = [WJetsToLNu]
+WJetsHT  = [WJetsToLNu_HT100to200, WJetsToLNu_HT200to400, WJetsToLNu_HT400to600, WJetsToLNu_HT600toInf, WJetsToLNu_HT600to800, WJetsToLNu_HT800to1200, WJetsToLNu_HT1200to2500 , WJetsToLNu_HT2500toInf]
 
 
-samples = [TTJets_LO, TTJets_LO_HT600to800, TTJets_LO_HT800to1200, TTJets_LO_HT1200to2500, TTJets_LO_HT2500toInf] + [WJetsToLNu, WJetsToLNu_HT100to200, WJetsToLNu_HT200to400, WJetsToLNu_HT400to600, WJetsToLNu_HT600toInf, WJetsToLNu_HT600to800, WJetsToLNu_HT800to1200, WJetsToLNu_HT1200to2500] #+ [ ZJetsToNuNu_HT100to200, ZJetsToNuNu_HT200to400, ZJetsToNuNu_HT400to600, ZJetsToNuNu_HT600toInf]
+#samples = [TTJets_LO, TTJets_LO_HT600to800, TTJets_LO_HT800to1200, TTJets_LO_HT1200to2500, TTJets_LO_HT2500toInf] + [WJetsToLNu, WJetsToLNu_HT100to200, WJetsToLNu_HT200to400, WJetsToLNu_HT400to600, WJetsToLNu_HT600toInf, WJetsToLNu_HT600to800, WJetsToLNu_HT800to1200, WJetsToLNu_HT1200to2500] #+ [ ZJetsToNuNu_HT100to200, ZJetsToNuNu_HT200to400, ZJetsToNuNu_HT400to600, ZJetsToNuNu_HT600toInf]
 #samples = [TTJets_LO, TTJets_LO_HT600to800, TTJets_LO_HT800to1200, TTJets_LO_HT1200to2500, TTJets_LO_HT2500toInf] 
+
+samples = TTJets + WJetsInc + WJetsHT
 
 
 for sample in samples:
