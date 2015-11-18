@@ -7,8 +7,8 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "signal" # "signal" "WJets" "TTJets"
-zoom = True
+inputSample = "WJets" # "signal" "WJets" "TTJets"
+zoom = False
 
 #ROOT Options
 ROOT.gROOT.Reset() #re-initialises ROOT
@@ -61,13 +61,13 @@ xmax = 1000
 sampleName = allSignals[0]
 
 if inputSample == "signal": 
-   sampleName == allSignals[0]
+   sampleName = allSignals[0]
    xmax = 150
 elif inputSample == "WJets": 
-   sampleName == WJetsToLNu
+   sampleName = WJetsToLNu
    xmax = 500
 elif inputSample == "TTJets": 
-   sampleName == TTJets_LO
+   sampleName = TTJets_LO
    xmax = 500
 else:
    print "Sample unavailable (check name)."
