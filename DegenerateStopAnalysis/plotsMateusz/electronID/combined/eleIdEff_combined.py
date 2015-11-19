@@ -7,8 +7,8 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "WJets" # "signal" "WJets" "TTJets"
-zoom = False
+inputSample = "signal" # "signal" "WJets" "TTJets"
+zoom = True
 
 #ROOT Options
 ROOT.gROOT.Reset() #re-initialises ROOT
@@ -86,15 +86,15 @@ if zoom == True:
    z = "_lowPt"
 
 #Selection criteria
-deltaR = "sqrt((genLep_eta[0] - LepGood_eta)^2 + (genLep_phi[0] - LepGood_phi)^2)"
-#deltaP = "abs((genLep_pt[0] - LepGood_pt[0])/genLep_pt[0])" #pt difference: gen wrt. reco in %
+deltaR = "sqrt((genLep_eta - LepGood_eta)^2 + (genLep_phi - LepGood_phi)^2)"
+#deltaP = "abs((genLep_pt - LepGood_pt)/genLep_pt)" #pt difference: gen wrt. reco in %
 
-deltaRcut = 0.1
+deltaRcut = 0.3
 #deltaPcut = 0.5 #in '%'
 
 #IDs: 0 - none, 1 - veto (~95% eff), 2 - loose (~90% eff), 3 - medium (~80% eff), 4 - tight (~70% eff)
 #genSel = "ngenLep == 1 && abs(genLep_pdgId[0]) == 11 && abs(genLep_eta[0]) < 2.5" #nLepGood == 1 biases your efficiency & 5 GeV cut in LepGood
-genSel = "Sum$(abs(genLep_pdgId == 11 && abs(genLep_eta) < 2.5)) == 1" # == ngenLep
+genSel = "Sum$(abs(genLep_pdgId == 11) && abs(genLep_eta) < 2.5) == 1" # == ngenLep
 matchSel = "Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) != 0"
 cutSel = "LepGood_SPRING15_25ns_v1 >="
 
@@ -111,9 +111,9 @@ hists = []
 #Events.Draw("genLep_pt[0]" + ">>hist", genSel)
 #hists.append(hist1)
 
-hists.append(makeHistVarBins(Events, "genLep_pt[0]", genSel, bins)) #match gen cuts to LepGood cuts (eta, pt) 
+hists.append(makeHistVarBins(Events, "genLep_pt", genSel, bins)) #match gen cuts to LepGood cuts (eta, pt) 
 hists[0].SetName("genEle")
-hists[0].SetTitle("Electron p_{T} for Various IDs")
+hists[0].SetTitle("Electron p_{T} for Various IDs (Veto, Loose, Medium, Tight, MVA)")
 hists[0].GetXaxis().SetTitle("Generated Electron p_{T} / GeV")
 hists[0].GetXaxis().SetTitleOffset(1.2)
 hists[0].GetYaxis().SetTitleOffset(1.2)
@@ -131,7 +131,7 @@ ROOT.gPad.Update()
 alignStats(hists[0])
 
 for i in range(1,5): #hists 1-4
-   hists.append(makeHistVarBins(Events, "genLep_pt[0]", genSel + "&&" + matchSel + "&&" + cutSel + str(i), bins))
+   hists.append(makeHistVarBins(Events, "genLep_pt", genSel + "&&" + matchSel + "&&" + cutSel + str(i), bins))
    hists[i].SetFillColor(0)
    hists[i].SetLineWidth(3)
    hists[i].Draw("same")
@@ -156,7 +156,6 @@ hists[4].SetName("electrons_tight")
 hists[4].SetLineColor(ROOT.kRed+1)
 l1.AddEntry("electrons_tight", "Tight ID", "F")
 
-ROOT.gPad.Update()
 
 #MVA IDs
 WPs = {'WP90':\
@@ -178,7 +177,7 @@ for WP in WPs:
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebSplit) + "&& LepGood_eta <" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB2']) + ") || \
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EE']) + "))"
    
-   hists.append(makeHistVarBins(Events, "genLep_pt[0]", genSel + "&&" + matchSel + "&&" + mvaSel, bins))
+   hists.append(makeHistVarBins(Events, "genLep_pt", genSel + "&&" + matchSel + "&&" + mvaSel, bins))
    
 hists[5].SetName("electrons_mva_wp90")
 hists[5].Draw("same")
@@ -195,6 +194,8 @@ hists[6].SetLineWidth(3)
 l1.AddEntry("electrons_mva_wp80", "MVA ID (WP80)", "F")
 
 l1.Draw()
+
+ROOT.gPad.Update()
 
 #Total Efficiencies
 #eff1 = float(Events.GetEntries(genSel + "&&" + matchSel + "&&" + cutSel + "1"))/float(Events.GetEntries(genSel + "&&" + "genLep_pt[0] > 5"))*100 #added generated pt cut to match LepGood collection
