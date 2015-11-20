@@ -29,7 +29,7 @@ pkdGenParts = False
 verbose = False
 break_for_debug = False
 defSampleStr = "T2DegStop_300_270"
-subDir = "postProcessed_7412pass2__v3"
+subDir = "postProcessed_7412pass2"
 
 
 ROOT.gSystem.Load("libFWCoreFWLite.so")
@@ -266,7 +266,10 @@ for isample, sample in enumerate(allSamples):
       newTrackVars = []
       for minTrkPt in trackMinPtList:
         ptString = str(minTrkPt).replace(".","p")
-        newTrackVars.extend( [ x%ptString for x in  [ "ntracks_%s/I" ,"ntrackOppJet1_%s/I" ,"ntrackOppJet12_%s/I" , "ntrackOppJetAll_%s/I" ] ] )
+        trkVars = [ "ntrack_%s" ,"ntrackOppJet1_%s" ,"ntrackOppJet12_%s" , "ntrackOppJetAll_%s" , \
+                    "ntrackOpp90Jet1_%s" ,"ntrackOpp90Jet12_%s" , "ntrackOpp90JetAll_%s" ,
+                    "ntrackOpp60Jet1_%s" ,"ntrackOpp60Jet12_%s" , "ntrackOpp60JetAll_%s"  ]
+        newTrackVars.extend( [ x%ptString+"/I" for x in trkVars ] )
       newVariables.extend(newTrackVars)
       #newVariables.extend( [
       #                     'track_ISRdPhi/F' , 'track_CosISRdPhi/F' ,"ntrack_1p5/I/0","ntrack_1/I/0","ntrack_2/I/0",
@@ -567,22 +570,49 @@ for isample, sample in enumerate(allSamples):
           ntrackOpp90Jet1={ minPt : 0 for minPt in trackMinPtList}
           ntrackOpp90Jet12={ minPt : 0 for minPt in trackMinPtList}
           ntrackOpp90JetAll={ minPt : 0 for minPt in trackMinPtList}
+          ntrackOpp60Jet1={ minPt : 0 for minPt in trackMinPtList}
+          ntrackOpp60Jet12={ minPt : 0 for minPt in trackMinPtList}
+          ntrackOpp60JetAll={ minPt : 0 for minPt in trackMinPtList}
 
           #goodTracks = filter( )
           for track in tracks:
             if not (abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.02 and abs( track['dz'] ) < 0.5 and track['pt']>=1.0) :
               continue
+            if abs(track['pdgId'])==13:
+              continue 
             if not ( track["matchedJetIndex"]==-1  and track['matchedJetDr']>0.4  ):## also check jet pt  ## vetoing tracks that are matched to a jet 
               continue
             for minTrkPt in trackMinPtList:
               if track['pt'] > minTrkPt:
                 ntrack[minTrkPt]+=1
+                ## tracks in the opp hemis
                 if track['CosPhiJet1'] < 0:
                   ntrackOppJet1[minTrkPt]+=1
                 if track['CosPhiJet12'] < 0:
                   ntrackOppJet12[minTrkPt]+=1
                 if track['CosPhiJetAll'] < 0:
                   ntrackOppJetAll[minTrkPt]+=1
+                ## tracks in half a hemis (Opp cone size = 90deg )
+                ## math.cos(2.35619)= -0.7071
+                cos135 = -0.7071
+                if track['CosPhiJet1'] < cos135:
+                  ntrackOpp90Jet1[minTrkPt]+=1
+                if track['CosPhiJet12'] < cos135:
+                  ntrackOpp90Jet12[minTrkPt]+=1
+                if track['CosPhiJetAll'] < cos135:
+                  ntrackOpp90JetAll[minTrkPt]+=1
+
+                ## tracks in quart. a hemis (Opp cone size = 60deg )
+                ## math.cos(2.6179)= -0.8659
+                cos150 = -0.8659
+                if track['CosPhiJet1'] < cos150:
+                  ntrackOpp60Jet1[minTrkPt]+=1
+                if track['CosPhiJet12'] < cos150:
+                  ntrackOpp60Jet12[minTrkPt]+=1
+                if track['CosPhiJetAll'] < cos150:
+                  ntrackOpp60JetAll[minTrkPt]+=1
+
+
           #break_for_debug = True        
 
               
@@ -608,11 +638,19 @@ for isample, sample in enumerate(allSamples):
           
           for minTrkPt in trackMinPtList:
             trkPtString = str(minTrkPt).replace(".","p")
-            setattr(s,"ntracks_%s"         %trkPtString         ,  ntrack[minTrkPt]   )
+            setattr(s,"ntrack_%s"         %trkPtString         ,  ntrack[minTrkPt]   )
+
             setattr(s,"ntrackOppJet1_%s"  %trkPtString  ,  ntrackOppJet1[minTrkPt]   )
             setattr(s,"ntrackOppJet12_%s" %trkPtString ,  ntrackOppJet12[minTrkPt]   )  
             setattr(s,"ntrackOppJetAll_%s"%trkPtString,  ntrackOppJetAll[minTrkPt]   )
 
+            setattr(s,"ntrackOpp90Jet1_%s"  %trkPtString  ,  ntrackOpp90Jet1[minTrkPt]   )
+            setattr(s,"ntrackOpp90Jet12_%s" %trkPtString ,  ntrackOpp90Jet12[minTrkPt]   )  
+            setattr(s,"ntrackOpp90JetAll_%s"%trkPtString,  ntrackOpp90JetAll[minTrkPt]   )
+
+            setattr(s,"ntrackOpp60Jet1_%s"  %trkPtString  ,  ntrackOpp60Jet1[minTrkPt]   )
+            setattr(s,"ntrackOpp60Jet12_%s" %trkPtString ,  ntrackOpp60Jet12[minTrkPt]   )  
+            setattr(s,"ntrackOpp60JetAll_%s"%trkPtString,  ntrackOpp60JetAll[minTrkPt]   )
           
  
 
