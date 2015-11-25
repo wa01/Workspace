@@ -1,6 +1,7 @@
-#eleIdEff_combined.py
+#eleIdEff_loop.py
 import ROOT
 import os, sys
+import math
 from array import *
 from Workspace.HEPHYPythonTools.helpers import getChunks, getChain#, getPlotFromChain, getYieldFromChain
 from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
@@ -86,8 +87,8 @@ if zoom == True:
    z = "_lowPt"
 
 #Selection criteria
-deltaR = "sqrt((genLep_eta - LepGood_eta)^2 + (genLep_phi - LepGood_phi)^2)"
-deltaRtau = "sqrt((genLepFromTau_eta - LepGood_eta)^2 + (genLepFromTau_phi - LepGood_phi)^2)"
+#deltaR = "sqrt((genLep_eta - LepGood_eta)^2 + (genLep_phi - LepGood_phi)^2)"
+#deltaRtau = "sqrt((genLepFromTau_eta - LepGood_eta)^2 + (genLepFromTau_phi - LepGood_phi)^2)"
 
 #deltaP = "abs((genLep_pt - LepGood_pt)/genLep_pt)" #pt difference: gen wrt. reco in %
 
@@ -95,43 +96,142 @@ deltaRcut = 0.3
 #deltaPcut = 0.5 #in '%'
 
 #IDs: 0 - none, 1 - veto (~95% eff), 2 - loose (~90% eff), 3 - medium (~80% eff), 4 - tight (~70% eff)
-nSel = "ngenLep > 0 && nLepGood > 0" #or == 1, == 2
-genSel = "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 1)" # == ngenLep
-matchSel = "(Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) != 0)"
+#genSel = "ngenLep == 1 && abs(genLep_pdgId[0]) == 11 && abs(genLep_eta[0]) < 2.5" #nLepGood == 1 biases your efficiency & 5 GeV cut in LepGood #match gen cuts to LepGood cuts (eta, pt) 
+#genSel1= "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 1)" # == ngenLep
+#genSel2 = "(Sum$(abs(genLepFromTau_pdgId) == 11 && abs(genLepFromTau_eta) < 2.5) == 1)" # == ngenLepFromTau
+#nGenLep = "(" + genSel1 + "+" + genSel2 + "== 1)" #single electrons
+#matchSel1 = "(Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) != 0)"
+#matchSel2 = "(Min$(" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) != 0)"
 
 cutSel = "LepGood_SPRING15_25ns_v1 >="
 
+#MVA IDs
+WPs = {'WP90':\
+         {'EB1_lowPt':-0.083313, 'EB2_lowPt':-0.235222, 'EE_lowPt':-0.67099, 'EB1':0.913286, 'EB2':0.805013, 'EE':0.358969},\
+       'WP80':\
+         {'EB1_lowPt':0.287435, 'EB2_lowPt':0.221846, 'EE_lowPt':-0.303263, 'EB1':0.967083, 'EB2':0.929117, 'EE':0.726311},\
+}
+
+ptSplit = 10 #we have above and below 10 GeV categories
+ebSplit = 0.8 #barrel is split into two regions
+ebeeSplit = 1.479 #division between barrel and endcap
+
+#Generated electrons
+hists = []
+
+for i in range(0,7):
+   hists.append(emptyHistVarBins("eleID" + str(i), bins))
+
+Events.Draw(">>eList", "")
+elist = ROOT.gDirectory.Get("eList")
+nEvents = elist.GetN()
+
+#Event Loop
+for i in range(nEvents):
+   #if i == 100000: break
+   Events.GetEntry(elist.GetEntry(i))
+
+   #Number of generated and reconstructed leptons
+   ngenLep = Events.GetLeaf("ngenLep").GetValue()
+   nLep = Events.GetLeaf("nLepGood").GetValue()
+   if ngenLep == 0 or nLep == 0: continue
+   
+   #print "ngen: ", ngenLep, "nlepgood: ", nLep
+   #Looping over generated leptons 
+   for igenlep in range(int(ngenLep)):
+      genLepId = Events.GetLeaf("genLep_pdgId").GetValue(igenlep)
+      genLepPt = Events.GetLeaf("genLep_pt").GetValue(igenlep)
+      genLepEta = Events.GetLeaf("genLep_eta").GetValue(igenlep)
+      genLepPhi = Events.GetLeaf("genLep_phi").GetValue(igenlep)
+
+      if abs(genLepId) != 11 or abs(genLepEta) > 2.5: continue #picking out electrons within acceptance (add pt > 5?)
+       
+      deltaRmin = 1000.0
+      matchIndex = -1
+      
+      #Calculating dR between gen and reco electron 
+      for ilep in range(int(nLep)):
+         lepId = Events.GetLeaf("LepGood_pdgId").GetValue(ilep)
+         lepEta = Events.GetLeaf("LepGood_eta").GetValue(ilep)
+         lepPhi = Events.GetLeaf("LepGood_phi").GetValue(ilep)
+         
+         if abs(lepId) != 11 or abs(lepEta) > 2.5: continue #picking out reco electron within acceptance
+         
+         deltaR = math.sqrt((genLepEta - lepEta)**2 + (genLepPhi - lepPhi)**2)
+         #print "dR: ", deltaR 
+         if deltaR < deltaRmin: #identifing reco electron with minimum dR
+            deltaRmin = deltaR
+            matchIndex = ilep
+      #print "dRmin, index: ", deltaRmin," ", matchIndex
+      if matchIndex == -1 or deltaRmin == 1000.0: continue #skip if no single reco electron within acceptance
+      
+      #Picking reco electron via minimum dR
+      lepId = Events.GetLeaf("LepGood_pdgId").GetValue(matchIndex)   
+      lepEta = Events.GetLeaf("LepGood_eta").GetValue(matchIndex)
+      lepPhi = Events.GetLeaf("LepGood_phi").GetValue(matchIndex)
+      lepPt = Events.GetLeaf("LepGood_pt").GetValue(matchIndex)
+      lepMatchId = Events.GetLeaf("LepGood_mcMatchId").GetValue(matchIndex)
+      cutID = Events.GetLeaf("LepGood_SPRING15_25ns_v1").GetValue(matchIndex)
+      mvaID = Events.GetLeaf("LepGood_mvaIdSpring15").GetValue(matchIndex)
+   
+      #Histogram filling   
+      #MVA ID cut (dependent on electron pt and detector region)
+      if lepPt <= ptSplit:
+         if lepEta < ebSplit:
+            MVA_min1 = WPs['WP80']['EB1_lowPt']
+            MVA_min2 = WPs['WP90']['EB1_lowPt']
+         elif lepEta >= ebSplit and lepEta < ebeeSplit:
+            MVA_min1 = WPs['WP80']['EB2_lowPt']
+            MVA_min2 = WPs['WP90']['EB2_lowPt']
+         elif lepEta >= ebeeSplit: # < 2.5 (applied already in LepGood)
+            MVA_min1 = WPs['WP80']['EE_lowPt']
+            MVA_min2 = WPs['WP90']['EE_lowPt']
+      elif lepPt > ptSplit:
+         if lepEta < ebSplit:
+            MVA_min1 = WPs['WP80']['EB1']
+            MVA_min2 = WPs['WP90']['EB1']
+         elif lepEta >= ebSplit and lepEta < ebeeSplit:
+            MVA_min1 = WPs['WP80']['EB2']
+            MVA_min2 = WPs['WP90']['EB2']
+         elif lepEta >= ebeeSplit: # < 2.5 (applied already in LepGood)
+            MVA_min1 = WPs['WP80']['EE']
+            MVA_min2 = WPs['WP90']['EE']
+      
+      #Generated Electron Pt
+      if abs(genLepId) == 11 and abs(genLepEta) < 2.5:
+         hists[0].Fill(genLepPt)
+      
+         if lepMatchId != 0 and deltaRmin < deltaRcut: 
+            
+            #Cut ID
+            for i in range(1,5):
+               if cutID >= i:
+                  hists[i].Fill(genLepPt)
+            
+            #MVA ID   
+            if mvaID >= MVA_min1:
+               hists[5].Fill(genLepPt)
+            if mvaID >= MVA_min2:
+               hists[6].Fill(genLepPt)
+ 
 ##################################################################################Canvas 1#############################################################################################
 c1 = ROOT.TCanvas("c1", "Canvas 1", 1800, 1500)
 c1.Divide(1,2)
 
 c1.cd(1)
 
-#Generated electrons
-hists = []
-
-hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel, bins)) #"(" + genSel + "||" + genSel2 + ") &&" + nGenLep
 hists[0].SetName("genEle")
 hists[0].SetTitle("Electron p_{T} for Various IDs (Veto, Loose, Medium, Tight, MVA)")
 hists[0].GetXaxis().SetTitle("Generated Electron p_{T} / GeV")
-hists[0].GetXaxis().SetTitleOffset(1.2)
-hists[0].GetYaxis().SetTitleOffset(1.2)
 hists[0].SetFillColor(ROOT.kBlue-9)
 hists[0].SetLineColor(ROOT.kBlack)
 hists[0].SetLineWidth(3)
-ROOT.gPad.SetLogy()
 hists[0].Draw()
-
+ROOT.gPad.SetLogy()
 ROOT.gPad.Update()
-
+hists[0].GetXaxis().SetTitleOffset(1.2)
+hists[0].GetYaxis().SetTitleOffset(1.2)
 alignStats(hists[0])
-
-#Electron Cut IDs
-for i in range(1,5): #hists 1-4
-   hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel + "&&" + matchSel + "&& (" + cutSel + str(i) + ")", bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&& (" + cutSel + str(i) + ")"
-   hists[i].SetFillColor(0)
-   hists[i].SetLineWidth(3)
-   hists[i].Draw("same")
 
 #Veto ID
 hists[1].SetName("electrons_veto")
@@ -149,40 +249,17 @@ hists[3].SetLineColor(ROOT.kOrange-2)
 hists[4].SetName("electrons_tight")
 hists[4].SetLineColor(ROOT.kRed+1)
 
-#Electron MVA IDs
-WPs = {'WP90':\
-         {'EB1_lowPt':-0.083313, 'EB2_lowPt':-0.235222, 'EE_lowPt':-0.67099, 'EB1':0.913286, 'EB2':0.805013, 'EE':0.358969},\
-       'WP80':\
-         {'EB1_lowPt':0.287435, 'EB2_lowPt':0.221846, 'EE_lowPt':-0.303263, 'EB1':0.967083, 'EB2':0.929117, 'EE':0.726311},\
-}
-
-ptSplit = 10 #we have above and below 10 GeV categories
-ebSplit = 0.8 #barrel is split into two regions
-ebeeSplit = 1.479 #division between barrel and endcap
-
-for i,WP in enumerate(WPs):
-   mvaSel = "(\
-   (LepGood_pt <=" + str(ptSplit) + "&& LepGood_eta < " + str(ebSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB1_lowPt']) + ") || \
-   (LepGood_pt <=" + str(ptSplit) + "&& LepGood_eta >=" + str(ebSplit) + "&& LepGood_eta <" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB2_lowPt']) + ") || \
-   (LepGood_pt <=" + str(ptSplit) + "&& LepGood_eta >=" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EE_lowPt']) + ") || \
-   (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta <" + str(ebSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB1']) + ") || \
-   (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebSplit) + "&& LepGood_eta <" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB2']) + ") || \
-   (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EE']) + "))"
-   
-   hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel + "&&" + matchSel + "&&" + mvaSel, bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&&" + mvaSel
-   hists[5+i].SetName("electrons_mva_" + WP)
-
-hists[5].Draw("same")
-hists[5].SetFillColor(0)
+hists[5].SetName("electrons_mva_WP80")
 hists[5].SetLineColor(ROOT.kAzure+5)
-hists[5].SetLineWidth(3)
 
-hists[6].Draw("same")
-hists[6].SetFillColor(0)
+hists[6].SetName("electrons_mva_WP90")
 hists[6].SetLineColor(ROOT.kMagenta+2)
-hists[6].SetLineWidth(3)
 
-ROOT.gPad.Update()
+for i in range(1,7): #hists 1-4
+   hists[i].SetFillColor(0)
+   hists[i].SetLineWidth(3)
+   hists[i].Draw("same")
+
 
 l1 = makeLegend()
 l1.AddEntry("genEle", "Generated Electron p_{T}", "F")
@@ -289,12 +366,12 @@ c1.Modified()
 c1.Update()
 
 #Write to file
-savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
+savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/loop/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
 
 if not os.path.exists(savedir):
    os.makedirs(savedir)
 
 #Save to Web
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".root")
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".png")
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".pdf")
+c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".root")
+c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".png")
+c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".pdf")

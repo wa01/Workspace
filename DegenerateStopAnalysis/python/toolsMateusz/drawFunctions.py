@@ -14,31 +14,54 @@ def newLine():
    print ""
    return
 
+def emptyHist(varname, nbins = 100, min = 0, max = 1000):
+   hist = ROOT.TH1F("hist", varname + " Histogram", nbins, min, max)
+   hist.GetYaxis().SetTitle("Counts")
+   hist.GetXaxis().SetTitle(varname)
+   hist.GetXaxis().CenterTitle()
+   hist.GetYaxis().CenterTitle()
+   hist.SetFillColor(ROOT.kAzure+2)
+   hist.SetLineColor(ROOT.kBlack)
+   hist.SetLineWidth(3)
+   return hist
+
+def emptyHistVarBins(varname, xbins):
+   hist = ROOT.TH1F("hist", varname + " Histogram", len(xbins)-1, xbins)
+   hist.GetXaxis().SetTitle(varname)
+   hist.GetXaxis().CenterTitle()
+   hist.GetYaxis().SetTitle("Counts")
+   hist.GetYaxis().CenterTitle()
+   hist.SetFillColor(ROOT.kAzure+2)
+   hist.SetLineColor(ROOT.kBlack)
+   hist.SetLineWidth(3)
+   return hist
+
+
 def makeHist(sample, varname, sel = "", nbins = 100, min = 0, max = 1000):
-   hist = ROOT.TH1F("hist", "Histogram", nbins, min, max)
+   hist = ROOT.TH1F("hist", varname + " Histogram", nbins, min, max)
    sample.Draw(varname + ">>hist", sel, "goff")
    hist.SetTitle(varname + " Plot")
-   hist.GetXaxis().SetTitle(varname + " / GeV")
+   hist.GetXaxis().SetTitle(varname)
    hist.GetYaxis().SetTitle("Counts")
    hist.GetXaxis().CenterTitle()
    hist.GetYaxis().CenterTitle()
    hist.SetFillColor(ROOT.kAzure+2)
    hist.SetLineColor(ROOT.kBlack)
-   hist.SetLineWidth(4)
+   hist.SetLineWidth(3)
    return hist
 
 def makeHistVarBins(sample, varname, sel, xbins):
    # = array('d', [range(xmin,xmax,5)])
-   hist = ROOT.TH1F("hist", "Histogram", len(xbins)-1, xbins)
+   hist = ROOT.TH1F("hist", varname +  "Histogram", len(xbins)-1, xbins)
    sample.Draw(varname + ">>hist", sel, "goff")
    hist.SetTitle(varname + " Plot")
-   hist.GetXaxis().SetTitle(varname + " / GeV")
+   hist.GetXaxis().SetTitle(varname)
    hist.GetYaxis().SetTitle("Counts")
    hist.GetXaxis().CenterTitle()
    hist.GetYaxis().CenterTitle()
    hist.SetFillColor(ROOT.kAzure+2)
    hist.SetLineColor(ROOT.kBlack)
-   hist.SetLineWidth(4)
+   hist.SetLineWidth(3)
    return hist
 
 #Creates Legend
