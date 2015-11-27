@@ -113,6 +113,7 @@ class LHEEvent:
         #
         linefields = [ ]
         firstline = True
+        weightstart = False
         for l in lines:
             l1 = l
             # remove comments
@@ -132,7 +133,17 @@ class LHEEvent:
                 assert len(fields)==6
                 npexp = int(fields[0])
                 firstline = False
+
+
             else:
+                if l1.startswith("<scales"):
+                    print "scales:", l1
+                    weightstart=True
+                if l1.startswith("</event>"):
+                    weightstart = False
+                if weightstart:
+                    continue
+                print fields
                 assert len(fields)==13
                 p = LHEParticle(len(self.particles),int(fields[0]),
                                 float(fields[6]),float(fields[7]),float(fields[8]),

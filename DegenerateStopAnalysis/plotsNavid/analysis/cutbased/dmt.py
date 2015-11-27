@@ -47,7 +47,7 @@ class R1():
     self.name=name
     if hasattr(ROOT,name):
       print name , "already exists as a root TCutG! It will be deleted otherwise ROOT freaks out!"
-      getattr(ROOT,name).Delete()
+      #getattr(ROOT,name).Delete()
     r1= ROOT.TCutG(name,3) ##high mt region
     r1.SetVarX(xvar)
     r1.SetVarY(yvar)
@@ -57,6 +57,7 @@ class R1():
     r1.SetPoint(2,-1,b)
     r1.SetPoint(3,-1,1)
     r1.SetLineColor(ROOT.kRed)
+    r1.SetLineWidth(2)
     self.r = r1
 
 class R2():
@@ -81,6 +82,7 @@ class R2():
     r2.SetPoint(3,r3l, -50 )
     r2.SetPoint(4,-1,-50)
     r2.SetPoint(5,-1,fy(-1,m1,yinterc1))
+    r2.SetLineWidth(2)
     self.r=r2
 
 
@@ -95,7 +97,8 @@ class R3():
     r3.SetPoint(2,1,-10)
     r3.SetPoint(3,left,-10)
     r3.SetPoint(4,left,top)
-    r3.SetLineColor(ROOT.kAzure)
+    r3.SetLineColor(ROOT.kSpring)
+    r3.SetLineWidth(2)
     self.r=r3
 
 
@@ -109,6 +112,7 @@ class QCosRegion():
     self.r2cut = "({r2} && ! ( {r1} ))".format(r1=self.r1.name,r2=self.r2.name)
     self.r3cut = "({r3} && ! ( {r1} || {r2}) )".format(r1=self.r1.name,r2=self.r2.name,r3=self.r3.name)
     self.rej   = "(!({r1} ||  {r2} || {r3} ) )".format(r1=self.r1.name,r2=self.r2.name,r3=self.r3.name)
+    self.all   = "({r1} ||  {r2} || {r3} )".format(r1=self.r1.name,r2=self.r2.name,r3=self.r3.name)
     self.cut = CutClass(name,  [
                             ["r1",self.r1cut],
                             ["r2",self.r2cut],
@@ -133,19 +137,19 @@ class QCosRegion():
                           baseCut= sr1Loose     
                         )
     self.cut_ptbin = CutClass(name,  [
-                            ["r1",self.r1cut],
+                            #["r1",self.r1cut],
                                   ["r1_pt1",     "(%s && %s)"%(self.r1cut,  btw("lepPt",5,12)  )],
                                   ["r1_pt2",     "(%s && %s)"%(self.r1cut,  btw("lepPt",12,20)  )],
                                   ["r1_pt3",     "(%s && %s)"%(self.r1cut,  btw("lepPt",20,30)  )],
-                            ["r2",self.r2cut],
+                            #["r2",self.r2cut],
                                   ["r2_pt1",     "(%s && %s)"%(self.r2cut,  btw("lepPt",5,12)  )],
                                   ["r2_pt2",     "(%s && %s)"%(self.r2cut,  btw("lepPt",12,20)  )],
                                   ["r2_pt3",     "(%s && %s)"%(self.r2cut,  btw("lepPt",20,30)  )],
-                            ["r3",self.r3cut],
+                            #["r3",self.r3cut],
                                   ["r3_pt1",     "(%s && %s)"%(self.r3cut,  btw("lepPt",5,12)  )],
                                   ["r3_pt2",     "(%s && %s)"%(self.r3cut,  btw("lepPt",12,20)  )],
                                   ["r3_pt3",     "(%s && %s)"%(self.r3cut,  btw("lepPt",20,30)  )],
-                            ["rejected",self.rej],
+                            #["rejected",self.rej],
                                   ["rej_pt1",     "(%s && %s)"%(self.rej,  btw("lepPt",5,12)  )],
                                   ["rej_pt2",     "(%s && %s)"%(self.rej,  btw("lepPt",12,20)  )],
                                   ["rej_pt3",     "(%s && %s)"%(self.rej,  btw("lepPt",20,30)  )],
@@ -210,15 +214,20 @@ regions = [
           ]
 
 
-r1def = (1,-1)
-r2def = (1,-1000,0.8,0.8)
-r3def = (0.8,0.8,1)
+#r1def = (1,-1)
+#r2def = (1,-1000,0.8,0.8)
+#r3def = (0.8,0.8,1)
 
+r1bm1 = (0.8,-0.5)
+r2bm1 = (1.2,-1000,0.8,0.3)
+r3bm1 = (0.8,0.8,0.8)
 
-
+r1def = r1bm1
+r2def = r2bm1
+r3def = r3bm1
 
 r1_regions = [
-              ["r1_1p0_m1p0"  , r1def ,       r2def           , r3def      ],
+              #["r1_1p0_m1p0"  , r1def ,       r2def           , r3def      ],
               ["r1_1p0_m0p8",  (1,-.8),       r2def  , r3def    ],
               ["r1_1p0_m0p7",  (1,-0.7),      r2def  , r3def    ],
               ["r1_1p0_m0p5",  (1,-0.5),      r2def  , r3def    ],
@@ -227,37 +236,76 @@ r1_regions = [
 
               ["r1_1p1_m0p5",  (1.1,-.5 ),   r2def   , r3def   ],
               ["r1_1p2_m0p5",  (1.2,-.5  ),  r2def   , r3def   ],
-              ["r1_0p9_m0p5",  (1.2,-0.5 ),  r2def   , r3def   ],
-              ["r1_0p8_m0p5",  (1.2,-0.5),   r2def   , r3def   ],
+              ["r1_0p9_m0p5",  (0.9,-0.5 ),  r2def   , r3def   ],
+              ["r1_0p8_m0p5",  (0.8,-0.5),   r2def   , r3def   ],
 
               ["r1_1p1_m0p3",  (1.1,-0.3 ),  r2def   , r3def   ],
               ["r1_1p2_m0p3",  (1.2,-0.3  ), r2def   , r3def   ],
-              ["r1_0p9_m0p3",  (1.2,-0.3 ),  r2def   , r3def   ],
-              ["r1_0p8_m0p3",  (1.2,-0.3),   r2def   , r3def   ],
+              ["r1_0p9_m0p3",  (0.9,-0.3 ),  r2def   , r3def   ],
+              ["r1_0p8_m0p3",  (0.8,-0.3),   r2def   , r3def   ],
 
               ["r1_1p1_m0p7",  (1.1,-0.7 ),  r2def   , r3def   ],
               ["r1_1p2_m0p7",  (1.2,-0.7  ), r2def   , r3def   ],
-              ["r1_0p9_m0p7",  (1.2,-0.7 ),  r2def   , r3def   ],
-              ["r1_0p8_m0p7",  (1.2,-0.7),   r2def   , r3def   ],
+              ["r1_0p9_m0p7",  (0.9,-0.7 ),  r2def   , r3def   ],
+              ["r1_0p8_m0p7",  (0.8,-0.7),   r2def   , r3def   ],
           ]
 
 
-r1bm1 = (1.0,-0.5)
 r2_regions = [
-              ["r2_1p0_m1p0"  , r1bm1 ,       r2def           , r3def      ],
-              ["r2_1p0_m1p0"  , r1bm1 ,       r2def           , r3def      ],
-              ["r2_1p0_m1p0"  , r1bm1 ,       r2def           , r3def      ],
-              
+              ["r2_1p0_0p8_0p8"  , r1bm1 ,  (1,-1000,0.8,0.8)  , r3def      ],
+              ["r2_1p0_0p8_0p5"  , r1bm1 ,  (1,-1000,0.8,0.5)  , r3def      ],
+              ["r2_1p0_0p8_0p3"  , r1bm1 ,  (1,-1000,0.8,0.3)  , r3def      ],
+              ["r2_1p0_0p8_0p0"  , r1bm1 ,  (1,-1000,0.8,0.0)  , r3def      ],
 
+              ["r2_1p2_0p8_0p8"  , r1bm1 ,  (1.2,-1000,0.8,0.8)  , r3def      ],
+              ["r2_1p2_0p8_0p5"  , r1bm1 ,  (1.2,-1000,0.8,0.5)  , r3def      ],
+              ["r2_1p2_0p8_0p3"  , r1bm1 ,  (1.2,-1000,0.8,0.3)  , r3def      ],
+              ["r2_1p2_0p8_0p0"  , r1bm1 ,  (1.2,-1000,0.8,0.0)  , r3def      ],
+
+
+              ["r2_0p9_0p8_0p8"  , r1bm1 ,  (0.9,-1000,0.8,0.8)  , r3def      ],
+              ["r2_0p9_0p8_0p5"  , r1bm1 ,  (0.9,-1000,0.8,0.5)  , r3def      ],
+              ["r2_0p9_0p8_0p3"  , r1bm1 ,  (0.9,-1000,0.8,0.3)  , r3def      ],
+              ["r2_0p9_0p8_0p0"  , r1bm1 ,  (0.9,-1000,0.8,0.0)  , r3def      ],
              ]
 
 
+r3_regions = [
+              ["r3_0p8_0p8_1p0"  , r1bm1 ,  r2bm1  , (0.8,0.8,1)      ],
+              ["r3_0p8_0p5_1p0"  , r1bm1 ,  r2bm1  , (0.8,0.5,1)      ],
+              ["r3_0p8_0p3_1p0"  , r1bm1 ,  r2bm1  , (0.8,0.3,1)      ],
+              ["r3_0p8_0p0_1p0"  , r1bm1 ,  r2bm1  , (0.8,0.0,1)      ],
+
+              ["r3_0p8_0p8_1p2"  , r1bm1 ,  r2bm1  , (0.8,0.8,1.2)      ],
+              ["r3_0p8_0p5_1p2"  , r1bm1 ,  r2bm1  , (0.8,0.5,1.2)      ],
+              ["r3_0p8_0p3_1p2"  , r1bm1 ,  r2bm1  , (0.8,0.3,1.2)      ],
+              ["r3_0p8_0p0_1p2"  , r1bm1 ,  r2bm1  , (0.8,0.0,1.2)      ],
+
+              ["r3_0p8_0p8_0p8"  , r1bm1 ,  r2bm1  , (0.8,0.8,0.8)      ],
+              ["r3_0p8_0p5_0p8"  , r1bm1 ,  r2bm1  , (0.8,0.5,0.8)      ],
+              ["r3_0p8_0p3_0p8"  , r1bm1 ,  r2bm1  , (0.8,0.3,0.8)      ],
+              ["r3_0p8_0p0_0p8"  , r1bm1 ,  r2bm1  , (0.8,0.0,0.8)      ],
+
+
+              ["r3_0p8_0p0_0p3"  , r1bm1 ,  r2bm1  , (0.8,0.0,0.3)        ],
+              ["r3_0p8_0p0_0p0"  , r1bm1 ,  r2bm1  , (0.8,0.0,0.0)        ],
+              ["r3_0p8_0p0_m0p3"  , r1bm1 ,  r2bm1  , (0.8,0.0,-0.3)      ],
+              ["r3_0p8_0p0_m0p5"  , r1bm1 ,  r2bm1  , (0.8,0.0,-0.5)      ],
+
+              ["r3_0p9_0p0_0p3"  , r1bm1 ,  r2bm1  ,  (0.9,0.0,0.3)       ],
+              ["r3_0p9_0p0_0p0"  , r1bm1 ,  r2bm1  ,  (0.9,0.0,0.0)       ],
+              ["r3_0p9_0p0_m0p3"  , r1bm1 ,  r2bm1  , (0.9,0.0,-0.3)      ],
+              ["r3_0p9_0p0_m0p5"  , r1bm1 ,  r2bm1  , (0.9,0.0,-0.5)      ],
+
+
+
+             ]
 
 
 r=QCosRegion("t",(1,-1), (1,-1000,0.8,0.8), (0.8,0.8,1),  x=xvar,y=yvar)
 
 
-
+qcosRegionBM1 = QCosRegion("BM1", r1bm1, r2bm1, r3bm1)
 
 
 
@@ -269,6 +317,60 @@ canvas={}
 
 
 
+regDict={} 
+print "Getting Yields for different regions:" 
+allregions = r1_regions + r2_regions + r3_regions
+
+for r in allregions: 
+  name=r[0] 
+  canv={} 
+  regDict[name] = QCosRegion(*r, x=xvar,y=yvar) 
+  #print "----------------------------------------------------------------" 
+  #print getattr(regDict[name],cut).list 
+  #print regDict[name]
+  #print "----------------------------------------------------------------" 
+
+  #yDict[name]=  Yields(samples,['w','s'], getattr(regDict[name],cut), cutOpt='list', tableName='{cut}_dmt',pklOpt=True,pklDir=pklDir )    
+  #JinjaTexTable(yDict[name]) 
+  #canv[name]=ROOT.TCanvas(name,name,800,800) 
+  #fomHistW.Draw("COLZ") 
+  #regDict[name].r1.r.Draw("same") 
+  #regDict[name].r2.r.Draw("same") 
+  #regDict[name].r3.r.Draw("same") 
+  #canv[name].SaveAs(saveDir+"/%s.png"%name) 
+
+
+dmtRegions = CutClass( "dmtRegions", 
+                        [  [r[0] , regDict[r[0]].r1cut] for r in r1_regions ] +
+                        [  [r[0] , regDict[r[0]].r2cut] for r in r2_regions ] +
+                        [  [r[0] , regDict[r[0]].r3cut] for r in r3_regions ] 
+                     ,
+              baseCut=sr1Loose,
+            )
+dmtR1 = CutClass( "dmtR1", 
+                        [  [r[0] , regDict[r[0]].r1cut] for r in r1_regions ] 
+                     ,
+              baseCut=sr1Loose,
+            )
+dmtR2 = CutClass( "dmtR2", 
+                        [  [r[0] , regDict[r[0]].r2cut] for r in r2_regions ] 
+                     ,
+              baseCut=sr1Loose,
+            )
+dmtR3 = CutClass( "dmtR3", 
+                        [  [r[0] , regDict[r[0]].r3cut] for r in r3_regions ] 
+                     ,
+              baseCut=sr1Loose,
+            )
+
+
+dmtRejRegions = CutClass( "dmtRejRegions", 
+                        [  [r[0] , regDict[r[0]].rej] for r in r1_regions ] +
+                        [  [r[0] , regDict[r[0]].rej] for r in r2_regions ] +
+                        [  [r[0] , regDict[r[0]].rej] for r in r3_regions ] 
+                     ,
+              baseCut=sr1Loose,
+            )
 
 
 

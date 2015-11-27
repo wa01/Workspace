@@ -55,7 +55,7 @@ import os
 
 class JinjaTexTable():
   def __init__(self,yieldInstance, FOM=True, texDir="./tex/", pdfDir=pdfDir, outputName="",\
-                              searchpath="./LaTexJinjaTemplates", template_file= "", ):
+                              searchpath="./LaTexJinjaTemplates", template_file= "", removeJunk=False):
     self.searchpath = searchpath
 
     if template_file:
@@ -106,6 +106,11 @@ class JinjaTexTable():
     print "LaTex File:", texDir+self.outputName
 
     os.system("pdflatex -output-directory=%s %s"%(self.pdfDir,self.texDir+self.outputName))
+    if removeJunk:
+      out = pdfDir+self.outputName
+      os.system("rm %s"%out.replace(".tex","aux"))      
+      os.system("rm %s"%out.replace(".tex","log"))      
+
 
 
 

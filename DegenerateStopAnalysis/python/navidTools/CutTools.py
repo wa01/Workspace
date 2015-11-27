@@ -68,20 +68,34 @@ class CutClass():
     else:
       return "(%s &&"%baseCutString+ combineCutList(cutList)+ ")"
 
-  def nMinus1(self,minusCutList, cutList=True, baseCut=False) :
-    if baseCut:
+  def nMinus1(self,minusList, cutList=True ) :
+    if self.baseCut:
       cutList = self.fullList
     else:
       cutList = self.inclList
-    if not baseCut and cutList:
+    if not self.baseCut and cutList:
       cutList = cutList
 
-    minusCutList = [minusCut.lower() for minusCut in minusCutList]
-    print minusCutList
-    print cutList
-    cutList = filter( lambda x: not x[0].lower() in  minusCutList , cutList)
-    print cutList
-    return combineCutList(cutList)
+
+    if type(minusList)==type("str"):
+      minusList = [minusList]
+
+    #minusCutList = [minusCut.lower() for minusCut in cutList]
+    #self.minusList = [ minusCut.lower() for minusCut in minusCutList]
+    #print cutList
+    #self.minusCutList = filter( lambda x: not x[0].lower() in minusList , cutList )
+
+    self.cutsToThrow = []
+    self.minusCutList = [ c for c in cutList]
+    for cut in cutList:
+      for minusCut in minusList:
+        #print minusCut, cut[0] 
+        if minusCut.lower() in cut[0].lower():
+          self.cutsToThrow.append(self.minusCutList.pop( self.minusCutList.index(cut)) )
+
+    #self.minusCutList2 = filter( lambda x: not any( [ minusCut.lower() in x[0].lower() for minusCut in minusList ] ),  cutList )
+    print "ignoring cuts," , self.cutsToThrow
+    return combineCutList(self.minusCutList)
 
     #if baseCut:
     #  self.combined=combineCutList(self.inclusiveCutList)

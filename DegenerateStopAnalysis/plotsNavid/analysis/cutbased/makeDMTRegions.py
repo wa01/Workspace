@@ -17,12 +17,12 @@ regs=[
       # {"r":r1_regions, "name": "r1", 'pklDir':"./pkl/dmt_regions/r1/", "cut":"cut1_ptbin"},
       # {"r":r2_regions, "name": "r2", 'pklDir':"./pkl/dmt_regions/r2/", "cut":"cut2_ptbin"},
       # {"r":r3_regions, "name": "r3", 'pklDir':"./pkl/dmt_regions/r3/", "cut":"cut3_ptbin"},
-       {"r":r1_regions, "name": "r1", 'pklDir':"./pkl/dmt_regions/r1/", "cut":"cut_ptbin"},
+       {"r":r1_regions, "name": "r1", 'pklDir':"./pkl/dmt_regions/r1/", "cut":"cut1_ptbin"},
        {"r":r2_regions, "name": "r2", 'pklDir':"./pkl/dmt_regions/r2/", "cut":"cut2_ptbin"},
-       {"r":r3_regions, "name": "r3", 'pklDir':"./pkl/dmt_regions/r3/", "cut":"cut_ptbin"},
+       {"r":r3_regions, "name": "r3", 'pklDir':"./pkl/dmt_regions/r3/", "cut":"cut3_ptbin"},
       ]
 
-ind =  1
+ind = 2 
 regions = regs[ind]['r']
 regsname = regs[ind]['name']
 pklDir = regs[ind]['pklDir']
@@ -36,7 +36,7 @@ if not samples.s.tree.GetEventList():
 
 print "Getting Plots:"
 if not hasattr(samples.s,"cuts"):
-  getPlots2(samples,plots,sr1Loose,sampleList=[],plotList=["dmt"])
+  getPlots2(samples,plots,sr1Loose,sampleList=['w','s'],plotList=["dmt"])
 print "Getting FOM hist"
 fomHistW = getFOMFromTH2F(samples.s.cuts.sr1Loose.DMT, samples.w.cuts.sr1Loose.DMT)
 fomHistW.SetTitle("FOM")
@@ -60,23 +60,25 @@ sample = samples.s.tree.Clone()
 
 
 yDict={}
-regDict={}
+#regDict={}
 print "Getting Yields for different regions:"
 for r in regions:
-  name=r[0]
-  canv={}
-  regDict[name] = QCosRegion(*r, x=xvar,y=yvar)
-  print "----------------------------------------------------------------"
-  print getattr(regDict[name],cut).list
-  print "----------------------------------------------------------------"
-  yDict[name]=  Yields(samples,['w','s'], getattr(regDict[name],cut), cutOpt='list', tableName='{cut}_dmt',pklOpt=True,pklDir=pklDir )   
-  JinjaTexTable(yDict[name])
-  canv[name]=ROOT.TCanvas(name,name,800,800)
-  fomHistW.Draw("COLZ")
-  regDict[name].r1.r.Draw("same")
-  regDict[name].r2.r.Draw("same")
-  regDict[name].r3.r.Draw("same")
-  canv[name].SaveAs(saveDir+"/%s.png"%name)
+    name=r[0]
+    canv={}
+    #regDict[name] = QCosRegion(*r, x=xvar,y=yvar)
+    #print "----------------------------------------------------------------"
+    #print getattr(regDict[name],cut).list
+    #print "----------------------------------------------------------------"
+    yDict[name]=  Yields(samples,['w','s'], getattr(regDict[name],cut), cutOpt='list', tableName='{cut}_dmt',pklOpt=True,pklDir=pklDir )   
+    #JinjaTexTable(yDict[name])
+    canv[name]=ROOT.TCanvas(name,name,800,800)
+    fomHistW.Draw("COLZ")
+    regDict[name].r1.r.Draw("same")
+    regDict[name].r2.r.Draw("same")
+    regDict[name].r3.r.Draw("same")
+    canv[name].SaveAs(saveDir+"/%s.png"%name)
+
+
 
     
 
@@ -129,7 +131,12 @@ print bestList
 
 
 
-if False:
+
+
+## Draw 2D plot Variation in Each DMT Region
+
+DrawVariationsInDMTRegions=False
+if DrawVariationsInDMTRegions:
 
   regDict={}
   canv2= ROOT.TCanvas("cdmt","cdmt",800,800)
@@ -160,4 +167,19 @@ if False:
     regDict[name].r2.r.Draw("same")
     regDict[name].r3.r.Draw("same")
   canv2.SaveAs(saveDir+"/%s.png"%"allDMTr3Regions")
+
+
+
+## Yields for each DMT Regions
+if True:
+  dmtYields={}
+  for dmtCut in [dmtRegions, dmtR1, dmtR2, dmtR3 ]:
+    dmtYields[dmtCut.name]=   Yields(samples,['w','s'], dmtCut, cutOpt='list', tableName='{cut}',pklOpt=True,pklDir= "./pkl/dmt_regions/" )
+    JinjaTexTable(dmtYields[dmtCut.name])    
+
+
+
+
+
+
 

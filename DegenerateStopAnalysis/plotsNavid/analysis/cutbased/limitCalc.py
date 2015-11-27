@@ -16,8 +16,8 @@ from os.path import basename, splitext
 
 def getLimit(yld,sys_uncorr=1.2, sys_corr = 1.06):
   c = cardFileWriter()
-  c.defWidth=25
-  c.maxUncNameWidth=30
+  c.defWidth=35
+  c.maxUncNameWidth=40
   c.precision=6
   c.addUncertainty("Sys", 'lnN')
 

@@ -20,19 +20,23 @@ class Samples(dict):
     super(Samples, self).__init__(**kwargs)
     self.__dict__=self
  
-    data= [samp for samp in self.__dict__ if  self[samp].isData ]
-    print data 
+    dataList= [samp for samp in self.__dict__ if  self[samp].isData ]
 
 
 
-    if len(data)>0:
-      data_lumi = self[data[0]]['lumi']
-      print "--------- Samples include data" 
-      print "--------- data_weight will be created for MC samples using the data lumi:  %s fb-1 "%data_lumi
+    if len(dataList)>0:
       includes_data= True
-      for samp in self:
-        if not self[samp].isData:
-          self[samp].data_weight = "({w})*({dlumi})/({mclumi})".format(w=self[samp].weight, dlumi=data_lumi, mclumi=self[samp].lumi)
+      print "--------- Samples include data,", dataList 
+      for d in dataList:
+        if self[d].isSignal:
+          assert False, ("A sample is Signal and Data??!... nice try, but NO! ", d)
+        data_name = self[d]['name']
+        data_lumi = self[d]['lumi']
+        weight_name = data_name +"_weight"
+        print "--------- data_weight will be created for MC samples using the data lumi:  %s fb-1 "%data_lumi
+        for samp in self:
+          if not self[samp].isData:
+            self[samp][weight_name] = "({w})*({dlumi})/({mclumi})".format(w=self[samp].weight, dlumi=data_lumi, mclumi=self[samp].lumi)
       
 
   def bkgs(self):
