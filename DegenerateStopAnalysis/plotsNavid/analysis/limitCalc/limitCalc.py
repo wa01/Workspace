@@ -24,7 +24,7 @@ pickleFiles = glob.glob(pickleDir+"/*.pkl")
 def getLimit(yld):
   c = cardFileWriter()
   c.defWidth=25
-  c.maxUncNameWidth=30
+  c.maxUncNameWidth=45
   c.precision=6
   c.addUncertainty("Sys", 'lnN')
 

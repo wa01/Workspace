@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 
 
-
+import sys
 
 
 def getYieldsFromCutFlow(tree,cut_class,weight="(weight)",opt="flow"):
@@ -102,7 +102,7 @@ class Yields():
     if not isinstance(cutInst,CutClass):
       raise Exception("use an instance of cutClass")
     self.nDigits    = nDigits
-    self.sampleDict = sampleDict
+    sampleDict = sampleDict
     self.cutInst    = cutInst
     self.weight     = weight
     self.tableName  = tableName.format(cut=self.cutInst.name)
@@ -120,22 +120,22 @@ class Yields():
 
     self.yieldDictRaw = { tree:[ ] for tree in treeList}
 
-    self.getYields()
+    self.getYields(sampleDict)
     self.pklOpt = pklOpt
     self.pklDir = pklDir +"/"
     if self.pklOpt:
       self.pickle(self.pklOpt,self.pklDir)
 
-  def getYields(self):
+  def getYields(self,sampleDict):
     for ic, cut in enumerate(self.cutList):
       for tree in self.treeList:
-        yld = round(getYieldFromChain(self.sampleDict[tree]['tree'], cut[1],self.weight),self.nDigits) 
+        yld = round(getYieldFromChain(sampleDict[tree]['tree'], cut[1],self.weight),self.nDigits) 
         self.yieldDictRaw[tree].append(yld)
     self.yieldDictRaw['Total']  = [sum(x) for x in zip(*[self.yieldDictRaw[tree] for tree in self.bkgList])]
 
     self.yieldDict={}
     for tree in self.treeList:
-      self.yieldDict[tree]      = np.array([self.sampleDict[tree]['name']] +self.yieldDictRaw[tree],dtype='|S8')
+      self.yieldDict[tree]      = np.array([sampleDict[tree]['name']] +self.yieldDictRaw[tree],dtype='|S8')
     self.yieldDict["Total"]     = np.array(["Total"]+ self.yieldDictRaw['Total'],dtype='|S8')
     sig = self.sigList[0] #### need to fix for multiple signals
     self.yieldDict["FOM"]       = np.array(["FOM"]+ [ round(calcFOMs(self.yieldDictRaw[sig][ic] , self.yieldDictRaw["Total"][ic] ,0.2,"AMSSYS" ),2 )
@@ -159,6 +159,9 @@ class Yields():
       print "Yield Table pickled in  %s"%"YieldTable_%s.pkl"%self.tableName
 
 
+  def __sizeof__(self):
+    return object.__sizeof__(self) + \
+      sum(sys.getsizeof(v) for v in self.__dict__.values())
 
 
 

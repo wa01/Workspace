@@ -20,6 +20,8 @@ from Workspace.DegenerateStopAnalysis.navidTools.FOM import *
 import math
 
 
+saveDir = "/afs/hephy.at/user/n/nrad/www/T2Deg13TeV/analysis/RunII/DataPlots/1stIter"
+
 cmsbase = os.getenv("CMSSW_BASE")
 print "cmsbase", cmsbase
 ROOT.gROOT.LoadMacro(cmsbase+"/src/Workspace/HEPHYPythonTools/scripts/root/tdrstyle.C")
@@ -27,9 +29,10 @@ ROOT.setTDRStyle()
 maxN = -1
 ROOT.gStyle.SetOptStat(0)
 
-lumi =1260 ##fb
-MCScale = 0.6978 ## 0.8
-MCLumi = 10000
+#lumi =1260 ##fb
+MCScale = 0.81 ## 0.8
+#MCScale = 6.955
+#MCLumi = 10000
 
 
 
@@ -43,7 +46,7 @@ def setPadMargins(pad,t=None,b=None,l=None,r=None):
 #def makePlot(samples,plots,plot,cut):
 #def drawDataPlot(sigHists,bkgHists,dataHist,name="Name"):
 #def drawDataPlot(sigHists,bkgHists,dataHist,name="Name"):
-def drawData(data,bkgs=[],sigs=[]):
+def drawData(title,data,bkgs=[],sigs=[],MCScale=1):
   ''' bkgHists = [ {'name':"WJets", 'hist':ROOT.TH1F , "name":"WJets", "color":color } , 
                    {'name':"TTJets", .....  }
                   ]
@@ -56,19 +59,24 @@ def drawData(data,bkgs=[],sigs=[]):
   
 
  
-  nBins  = data.GetNbinsX()
-  lowBin = data.GetBinLowEdge(1)
-  hiBin  = data.GetBinLowEdge(data.GetNbinsX()+1)
 
 
+  #### Preparing Stacks
   bkgList  = [samp['name'] for samp in bkgs]
   sigList  = [samp['name'] for samp in sigs]
-  bkgHists = [samp['hist'] for samp in bkgs]
-  sigHists = [samp['hist'] for samp in sigs]
+  bkgHists = [samp['hist'].Clone() for samp in bkgs]
+  sigHists = [samp['hist'].Clone() for samp in sigs]
+  bkgStack = getStackFromHists(bkgHists,"bkgStack",scale=1)
+  sigStack = getStackFromHists(sigHists,"sigStack",scale=1)
+  dataHist = data['hist'].Clone()
+  data_lumi = data['lumi']
+  nBins  = dataHist.GetNbinsX()
+  lowBin = dataHist.GetBinLowEdge(1)
+  hiBin  = dataHist.GetBinLowEdge(dataHist.GetNbinsX()+1)
 
 
   print "Plotting starts.."
-  can = ROOT.TCanvas(name,name,800,800)
+  can = ROOT.TCanvas(title,title,800,800)
   can.cd()
   latex = ROOT.TLatex()
   latex.SetNDC()
@@ -80,33 +88,35 @@ def drawData(data,bkgs=[],sigs=[]):
 
   Pad1 = ROOT.TPad("Pad1", "Pad1", 0, 0.35, 1, 0.9)
   Pad1.SetLogy()
-  setPadMargins(Pad1,0.06,0,0.16,0.06)
+  setPadMargins(Pad1,0.06,0,0.1,0.06)
+
   Pad1.Draw()
   Pad1.cd()
 
-  bkgStack = getStackFromHists(bkgHists,"bkgStack",scale=1)
-  sigStack = getStackFromHists(sigHists,"sigStack",scale=1)
+  
+  #for hist in sigHists + bkgHists:
+  #  hist.Scale(1./MCScale)  
+
 
   for bkg in bkgs:
     #leg.AddEntry(samples[bkg].cuts[cut.name][plotName], samples[bkg].name,"f")
     leg.AddEntry( bkg['hist'], bkg['name'],"f")
-  for sig in sigList:
-    leg.AddEntry( sig['hist'], sig['name'],"f")
+  for sig in sigs:
+    leg.AddEntry( sig['hist'], sig['name'],"l")
 
   #bkgStack.Draw("hist")
-  #bkgStack.SetMaximum(3000)
+  bkgStack.SetMaximum(data_lumi)
   bkgStack.SetMinimum(0.1)
 
   color = ROOT.kBlack
   #dataHist = ROOT.TH1F(str(histo) ,str(histo),p['bin'][0],p['bin'][1],p['bin'][2])
   #data.Draw(p['var']+'>>'+str(histoname),cut['cut'])
-  dataHist = data
   dataHist.SetMarkerStyle(20)
+  dataHist.SetMarkerSize(1.2)
   dataHist.SetMarkerColor(ROOT.kBlack)
+  dataHist.SetLineColor(color)
   print "pass draw : ) "
   #dataHist.SetMarkerStyle(20)
-  dataHist.SetMarkerSize(1.2)
-  dataHist.SetLineColor(color)
   #dataHist.GetXaxis().SetTitle(p['xaxis'])
   #dataHist.SetTitle("")
   dataHist.GetYaxis().SetTitleSize(0.05)
@@ -130,8 +140,8 @@ def drawData(data,bkgs=[],sigs=[]):
   leg.AddEntry(dataHist, "data","PL")
   leg.SetFillColor(0)
   leg.Draw()
-  latex.DrawLatex(0.16,0.958,"#font[22]{CMS}"+" #font[12]{Preliminary}")
-  latex.DrawLatex(0.72,0.958,"#bf{L=1.26 fb^{-1} (13 TeV)}")
+  latex.DrawLatex(0.1,0.958,"#font[22]{CMS}"+" #font[12]{Preliminary}")
+  latex.DrawLatex(0.72,0.958,"#bf{L=%0.2f fb^{-1} (13 TeV)}"%(data_lumi/1000.) )
   #latex.DrawLatex(0.6,0.8,"#bf{H_{T}>500 GeV}")
   #latex.DrawLatex(0.6,0.75,"#bf{L_{T}>250 GeV}")
   #latex.DrawLatex(0.6,0.7,"#bf{N_{bjets}==1}")
@@ -139,12 +149,15 @@ def drawData(data,bkgs=[],sigs=[]):
 
   Pad1.RedrawAxis()
   can.cd()
+
   Pad2 = ROOT.TPad("Pad2", "Pad2",  0, 0.04, 1, 0.35)
-  setPadMargins(Pad2,0,0.5,0.16,0.05)
+  setPadMargins(Pad2,0,0.5,0.1,0.05)
   #Pad2.SetTopMargin(0)
   #Pad2.SetBottomMargin(0.5)
   #Pad2.SetLeftMargin(0.16)
   #Pad2.SetRightMargin(0.05)
+
+  print "--------------------------------"
   Pad2.Draw()
   Pad2.cd()
   Func = ROOT.TF1('Func',"[0]",lowBin,hiBin)
@@ -171,31 +184,37 @@ def drawData(data,bkgs=[],sigs=[]):
   #h_ratio.Draw()
   Func.Draw("same")
   #Func.Draw()
-  can.Draw()
   #can.SaveAs(path+p['varname']+'.png')
   #can.SaveAs(path+p['varname']+'.pdf')
   #can.SaveAs(path+p['varname']+'.root')
   #can.Clear()
   #return can
+  can.Draw()
+  can.SaveAs(saveDir+"/%s.png"%title)
+  return can,bkgStack, sigStack, data , (sigHists,bkgHists), Pad1, Pad2 
 
 
 
 if __name__=="__main__":
 
-  plotName="LepPt"
-  cut=sr1Loose
-  name=plotName
+  plotName="MET"
+  cut=presel
+  title=plotName
 
-  getPlots2(samples,plots, sr1Loose , sampleList=[], plotList=[plotName])
 
 
   sigList=[samp for samp in samples if samples[samp].isSignal]
   bkgList=[samp for samp in samples if not samples[samp].isSignal and not samples[samp].isData]
+  d= "dblind"
+
+  #getPlots2(samples,plots,cut , sampleList=[], plotList=[plotName], weight="%s_weight"%d)
+  getPlots2(samples,plots,cut , sampleList=[], plotList=[plotName], weight="%s_weight"%d, nMinus1='met')
   #data   =[samp for samp in samples if samples[samp].isData][0]
 
 
-  bkgs =[ {'name': samples[samp].name, 'hist': samples[samp].cuts[cut.name][plotName]  } for samp in samples if not samples[samp].isSignal    ] 
-  sigs =[ {'name': samples[samp].name, 'hist': samples[samp].cuts[cut.name][plotName]  } for samp in samples if samples[samp].isSignal    ] 
-  data= samples['w'].cuts[cut.name][plotName]
+  bkgs =  [ {'name': samples[samp].name   ,'hist': samples[samp].cuts[cut.name][plotName]  } for samp in bkgList  ] 
+  sigs =  [ {'name': samples[samp].name   ,'hist': samples[samp].cuts[cut.name][plotName]  } for samp in sigList    ] 
+  data =    { 'name':  samples[d]['name']   ,'hist':samples[d].cuts[cut.name][plotName]  , 'lumi':samples[d]['lumi'] }
 
-  drawData(data,bkgs,sigs)
+
+  can=drawData(title,data,bkgs,sigs)

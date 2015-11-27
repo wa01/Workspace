@@ -4,8 +4,14 @@ import ROOT
 
 plotDict =\
       {
-        'LepPt':          {'var':"lepPt",         'name':"LepPt"    ,"bins":[5,0,35]              ,"decor":{"title":"LeptonPt", "x":"Pt"       ,"y":"Events"}  },
+        'LepPtCR':          {'var':"lepPt",         'name':"LepPtCR"    ,"bins":[30,30,300]              ,"decor":{"title":"LeptonPt", "x":"p_{T}(\mu)[GeV]"       ,"y":"Events"}  },
+        'LepPt':          {'var':"lepPt",         'name':"LepPt"    ,"bins":[8,0,40]              ,"decor":{"title":"LeptonPt", "x":"P_{T}(\mu)[GeV]"       ,"y":"Events"}  },
+        'MET':          {'var':"met",         'name':"MET"    ,"bins":[50,0,1000]              ,"decor":{"title":"MET", "x":"E_{T}^{miss} [GeV]"       ,"y":"Events"}  },
+        'MT':          {'var':"mt",         'name':"MT"    ,"bins":[20,0,140]              ,"decor":{"title":"MT", "x":"m_{T} [GeV]"       ,"y":"Events"}  },
         'dmt':            {'var':"Q80:CosLMet",   'name':"DMT"      ,"bins":[20,-1,1,20,-3,1]     ,"decor":{"title":"DeconstMT","x":"CosLepMet","y":"Q80"   }  }, 
+
+
+
 
         "nTrk_1p5":           {'var':"ntrack_1p5",   'name':"nTrks_1p5"    ,"bins":[20,0,20]                                   ,"decor":{"title":"Track Multip pt > 1.5"  ,"x":"nTrks","y":"nEvents"   }  },
         "nTrk_2":           {'var':"ntrack_2",   'name':"nTrks_2"    ,"bins":[20,0,20]                                         ,"decor":{"title":"Track Multip pt > 2.0"  ,"x":"nTrks","y":"nEvents"   }  },

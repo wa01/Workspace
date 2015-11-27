@@ -18,7 +18,7 @@ ROOT.gStyle.SetOptStat(0);
 setEventListToChains(samples,['w','s'],sr1Loose)
 
 
-getPlots2(samples,plots, sr1Loose , sampleList=[], plotList=[])
+getPlots2(samples,plots, sr1Loose , sampleList=['w','s'], plotList=[])
 
 
 
@@ -39,12 +39,11 @@ if False:
 
 
 rocPlots={}
-if False:
+if True:
   ROOT.gStyle.SetPaintTextFormat("5.2f")
   dOpt = "p"
   first = True
 
-  
   for p in samples.s.cuts.sr1Loose.keys():
     if not "trk" in p.lower():
       continue

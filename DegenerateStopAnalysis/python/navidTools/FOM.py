@@ -1,5 +1,5 @@
 import math 
-
+import ROOT
 
 ## --------------------------------------------------------------
 ##                        Figure of Merit Tools
@@ -64,4 +64,114 @@ def getFOMFromTH2F(sHist,bHist,fom="AMSSYS",sysUnc=0.2):
       fomHist.SetBinContent(x,y,fomVal) 
   return fomHist   
 
+def getFOMFromTH1F(sHist,bHist,fom="AMSSYS",sysUnc=0.2): 
+  assert sHist.GetNbinsX() == bHist.GetNbinsX(), "xBins dont match" 
+  nBinX= sHist.GetNbinsX() 
+  fomHist=sHist.Clone() 
+  fomHist.Reset() 
+  fomHist.SetMarkerSize(0.8) 
+  fomHist.SetName("FOM_%s_"%fom+fomHist.GetName() ) 
+  for x in range(1,nBinX+1): 
+      s=sHist.GetBinContent(x) 
+      b=bHist.GetBinContent(x) 
+      #print s,b,
+      fomVal= fomFuncs[fom](s,b,sysUnc) 
+      #print fomVal
+      fomHist.SetBinContent(x,fomVal) 
+  return fomHist   
+
+
+def getHistMax(hist):
+  nBinX = hist.GetNbinsX()
+  histMax= max( [(x,hist.GetBinContent(x)) for x in range(1, nBinX+1)] , key= lambda f: f[1] )
+  return histMax
+
+def getFOMFromTH1FIntegral(sHist,bHist,fom="AMSSYS",sysUnc=0.2):
+  assert sHist.GetNbinsX() == bHist.GetNbinsX(), "xBins dont match"
+  nBinX= sHist.GetNbinsX()
+  fomHist = sHist.Clone()
+  fomHist.Reset()
+  for x in range(1,nBinX+1):
+    s=sHist.Integral(x,nBinX) 
+    b=bHist.Integral(x,nBinX) 
+    fomVal = fomFuncs[fom](s,b,sysUnc) 
+    fomHist.SetBinContent(x,fomVal)
+  return fomHist
+
+def getCutEff(hist,rej=False):
+  ''' rej=False will return 1-eff ''' 
+  nBinX= hist.GetNbinsX()
+  effHist = hist.Clone()
+  effHist.Reset()
+  tot = hist.Integral()
+  #print "tot:", tot
+  for x in range(1,nBinX+1):
+    eff = hist.Integral(x,nBinX)/float(tot)
+    if rej:
+      effHist.SetBinContent(x,1-eff)
+    else:
+      effHist.SetBinContent(x,eff)
+  return {"hist":effHist,'tot':tot}
+
+
+def getEffFomPlot(sHist,bHist,fom="AMSSYS", sysUnc=0.2,savePath=''):
+  canv = ROOT.TCanvas()
+  sEff = getCutEff(sHist)['hist'] 
+  bEff = getCutEff(bHist)['hist'] 
+  fom  = getFOMFromTH1FIntegral(sHist,bHist)
+  fomMax = getHistMax(fom)
+  maxDict = {
+             "maxFOM":fomMax[1],
+              "bin":fomMax[0],
+              "sEff":sEff.GetBinContent(fomMax[0]),
+              "bEff":bEff.GetBinContent(fomMax[0]),
+            }
+
+  bEff.SetLineColor(bEff.GetFillColor())
+  bEff.SetFillColor(0)
+
+  fomColor = ROOT.kRed
+
+  rightmax = 1.1*fom.GetMaximum();
+  scale = canv.GetUymax()/rightmax
+  fom.Scale(scale)
+  bEff.Draw()
+  sEff.Draw('same')
+  fom.SetLineColor(fomColor)
+  fom.Draw('same')
+
+  fom.SetLineWidth(2)
+  sHist.SetLineWidth(2)
+  bHist.SetLineWidth(2)
+
+  xmin= 20 # (ROOT.gPad.GetUxmax()
+  ymin= 0  # ROOT.gPad.GetUymin()
+  xmax= 20 # ROOT.gPad.GetUxmax() 
+  ymax= 1.05 # ROOT.gPad.GetUymax()
+  axis = ROOT.TGaxis( xmin, ymin, xmax, ymax ,0,rightmax,510,"+L")
+  axis.SetLabelColor(fomColor)
+  axis.SetTitle("FOM")
+  axis.SetTitleColor(fomColor)
+  axis.Draw()
+  print "canv:", canv.GetUxmax()
+  print "after:",  (ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(), ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax() )
+  if savePath:
+    canv.SaveAs(savePath)
+  return {"canv":canv,"sEff":sEff,"bEff":bEff,"fom":fom,"axis":axis, "max":maxDict }
+
+
+def getROC(sHist, bHist, fom="AMSSYS", sysUnc=0.2,savePath=''):
+  s = getCutEff(sHist)
+  b = getCutEff(bHist,rej=True)
+  sEffHist = s['hist']
+  bRejHist = b['hist']
+  sTot = s['tot']
+  bTot = b['tot']
+  roc = ROOT.TGraph()
+  for x in range(1,sEffHist.GetNbinsX()+1):
+    sEff = sEffHist.GetBinContent(x)
+    bRej = bRejHist.GetBinContent(x)
+    roc.SetPoint(x,sEff,bRej)
+  return {'roc':roc,'sTot':sTot, 'bTot':bTot}
+  #return roc
 

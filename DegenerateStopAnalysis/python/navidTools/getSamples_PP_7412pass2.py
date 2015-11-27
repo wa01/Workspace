@@ -10,8 +10,10 @@ from Workspace.DegenerateStopAnalysis.navidTools.Sample import Sample, Samples
 
 #data_lumi = data_lumi
 mc_lumi   = 10000
-data_lumi_blinded = 0.133
-data_lumi_unblinded = 0.133 + 1.55
+#data_lumi_blinded = 1330
+#data_lumi_blinded = 553.149950870
+data_lumi_unblinded = 135.21
+data_lumi_blinded = 1547.74
 
 #TTSample    = getChain(TTJets['inc'],histname='') 
 #
@@ -31,24 +33,46 @@ data_lumi_unblinded = 0.133 + 1.55
 T2DegSample = getChain(T2DegStop_300_270['inc'],histname='')
 #WJets = getChain(WJets['inc'],histname='')
 WJetsHTSample = getChain(WJetsHT['inc'],histname='')
+
+
+
+
+
+
+TTJetsHT0   =   getChain(TTJetsHT0to600['inc'],histname='') 
+TTJetsHT1   =   getChain(TTJetsHT600to800['inc'],histname='')
+TTJetsHT2   =   getChain(TTJetsHT800toInf['inc'],histname='')
+
+
+TTJetsSample = TTJetsHT0.Clone()
+TTJetsSample.Add(TTJetsHT1)
+TTJetsSample.Add(TTJetsHT2)
 #WJetsSample = getChain(WJetsInc['inc'],histname='')
 
-METDataBlinded = getChain(MET_Run2015D_05Oct2015_v1['inc'],histname='')
-METData       = getChain(MET_Run2015D_PromptReco_v4['inc'],histname='')
-METData.Add(METDataBlinded)
+METDataOct05 = getChain(MET_Run2015D_05Oct2015_v1['inc'],histname='')
+METDataBlind       = getChain(MET_Run2015D_PromptReco_v4['inc'],histname='')
+METDataBlind.Add(METDataOct05)
+METDataUnblind = METDataBlind.CopyTree("run<=257599")
+
+
 
 sampleDict={
           'w':          {'tree':WJetsHTSample         ,'name':'WJets'     ,'color':ROOT.kSpring-5           , 'isSignal':0 ,'isData':0    ,"lumi":mc_lumi      },# ,'sumWeights':WJets[1] ,'xsec':20508.9*3    },
           "s":          {'tree':T2DegSample           ,'name':'S300_270'  ,'color':ROOT.kRed                , 'isSignal':1 ,'isData':0    ,"lumi":mc_lumi      },# ,'sumWeights':T2Deg[1] ,'xsec':8.51615    },
-          "d":          {'tree':METDataBlinded        ,'name':"data"      , 'color':ROOT.kBlack             , 'isSignal':0 ,'isData':1    ,"weight":"(1)"  ,'lumi': data_lumi_blinded},
-          #"d":         {'tree':METData               ,'name':"data"     , 'color':ROOT.kBlack              , 'isSignal':0 , 'isData':1    ,"weight":"(1)"  ,'lumi': 1.26 },
-          #'TTs': {'tree':getChain(ttJets['soft'],histname=' 'lineColor':1') ,               'color':1    , 'isSignal':0 , 'isData':0       },            
+          "d":          {'tree':METDataUnblind        ,'name':"data"      , 'color':ROOT.kBlack             , 'isSignal':0 ,'isData':1    ,"weight":"(1)"  ,'lumi': data_lumi_unblinded  },
+          "dblind":     {'tree':METDataBlind          ,'name':"dblind" , 'color':ROOT.kBlack          , 'isSignal':0 ,'isData':1    ,"weight":"(1)"  ,'lumi': data_lumi_blinded  },
+          'tt':         {'tree':TTJetsSample          ,'name':'TTJets'  ,'color':ROOT.kAzure-5              , 'isSignal':0 ,'isData':0    ,"lumi":mc_lumi      }
        }
 sampleDict2 = {}
 
 for samp in sampleDict:
   sampleDict2[samp]=Sample(**sampleDict[samp])
 samples = Samples(**sampleDict2)
+
+
+
+
+
 
 
 
