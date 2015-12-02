@@ -29,7 +29,8 @@ pkdGenParts = False
 verbose = False
 break_for_debug = False
 defSampleStr = "T2DegStop_300_270"
-subDir = "postProcessed_7412pass2"
+subDir = "postProcessed_7412pass2_v2"
+#subDir = "tracksBugFix_1"
 
 
 ROOT.gSystem.Load("libFWCoreFWLite.so")
@@ -68,9 +69,10 @@ branchKeepStrings_DATAMC = ["run", "lumi", "evt", "isData", "rho", "nVert",
                      "track_*", "isoTrack_*",
                      ] 
 if tracks:
-  #branchKeepStrings_DATAMC.extend(["track_*","isoTrack_*"])
-  trackMinPtList= [1,1.5,2,2.5,3]
-
+    #branchKeepStrings_DATAMC.extend(["track_*","isoTrack_*"])
+    trackMinPtList= [1,1.5,2,2.5,3]
+    trackJetPtList = [30,40,50,60,90]
+    
 #branches to be kept for MC samples only
 branchKeepStrings_MC = [ "nTrueInt", "genWeight", "xsec", "puWeight", 
                      "GenSusyMScan1", "GenSusyMScan2", "GenSusyMScan3", "GenSusyMScan4", "GenSusyMGluino", "GenSusyMGravitino", "GenSusyMStop", "GenSusyMSbottom", "GenSusyMStop2", "GenSusyMSbottom2", "GenSusyMSquark", "GenSusyMNeutralino", "GenSusyMNeutralino2", "GenSusyMNeutralino3", "GenSusyMNeutralino4", "GenSusyMChargino", "GenSusyMChargino2", 
@@ -485,7 +487,10 @@ for isample, sample in enumerate(allSamples):
         if options.leptonSelection in ['soft','hard','inc']:
           j_list=['eta','pt','phi','btagCMVA', 'btagCSV', 'id','mass']
           #if not sample['isData']: j_list.extend('partonId')
-          jets = filter(lambda j:j['pt']>30 and abs(j['eta'])<2.4 and j['id'], get_cmg_jets_fromStruct(r,j_list))
+          allJets = [getObjDict(t, 'Jet_',j_list, i ) for i in range(r.nJet)]
+          #allJets = get_cmg_jets_fromStruct(r,j_list)
+          #jets = filter(lambda j:j['pt']>30 and abs(j['eta'])<2.4 and j['id'], get_cmg_jets_fromStruct(r,j_list))
+          jets = filter(lambda j:j['pt']>30 and abs(j['eta'])<2.4 and j['id'], allJets)
           
           lightJets,  bJetsCSV = splitListOfObjects('btagCSV', 0.890, jets)
           #lightJets,  bJetsCSV = filter(lambda j:j['btagCSV']<0.814 and -1<j['btagCSV'] , jetscopy)
@@ -574,14 +579,22 @@ for isample, sample in enumerate(allSamples):
           ntrackOpp60Jet12={ minPt : 0 for minPt in trackMinPtList}
           ntrackOpp60JetAll={ minPt : 0 for minPt in trackMinPtList}
 
+          jetPtThreshold = 30
           #goodTracks = filter( )
           for track in tracks:
             if not (abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.02 and abs( track['dz'] ) < 0.5 and track['pt']>=1.0) :
               continue
-            if abs(track['pdgId'])==13:
+            if abs(track['pdgId']) in [13,11]:
               continue 
-            if not ( track["matchedJetIndex"]==-1  and track['matchedJetDr']>0.4  ):## also check jet pt  ## vetoing tracks that are matched to a jet 
-              continue
+            #if  (track["matchedJetIndex"] != -1  and track['matchedJetDr']<=0.4  ): ## track matched to a jet!  ## vetoing tracks that are matched to an ISR 
+            if  ( track['matchedJetDr']<=0.4  ): ## track matched to a jet!  ## vetoing tracks that are matched to an ISR 
+              #print "track matched to a Jet with deltaR:", track['matchedJetDr']
+              matchedJet = allJets[int(track['matchedJetIndex'])]
+              if matchedJet['pt'] > jetPtThreshold:
+                # Track is matched with dr<0.4 to a jet with pt higher than jetpthtreshold. Dont want to count such a track!
+                #print "     and jet has pt greater than jetptthreshold"
+                continue
+              
             for minTrkPt in trackMinPtList:
               if track['pt'] > minTrkPt:
                 ntrack[minTrkPt]+=1
@@ -601,7 +614,6 @@ for isample, sample in enumerate(allSamples):
                   ntrackOpp90Jet12[minTrkPt]+=1
                 if track['CosPhiJetAll'] < cos135:
                   ntrackOpp90JetAll[minTrkPt]+=1
-
                 ## tracks in quart. a hemis (Opp cone size = 60deg )
                 ## math.cos(2.6179)= -0.8659
                 cos150 = -0.8659
