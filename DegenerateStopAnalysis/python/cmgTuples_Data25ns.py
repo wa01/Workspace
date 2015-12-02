@@ -1,4 +1,6 @@
-data_path = "/data/nrad/cmgTuples/RunII/7412pass2/Data25ns" 
+#data_path = "/data/nrad/cmgTuples/RunII/7412pass2/Data25ns" 
+data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v2/Data25nsRun2015D_Nov13Json"
+
 
 SingleMuon_Run2015D_v4 ={\
 "chunkString":"",
