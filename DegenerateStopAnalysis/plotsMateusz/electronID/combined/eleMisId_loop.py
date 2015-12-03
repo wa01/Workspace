@@ -1,4 +1,4 @@
-#eleMisEff_combined.py
+#eleMisId_loop.py
 import ROOT
 import os, sys
 import math
@@ -8,7 +8,7 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "signal" # "signal" "WJets" "TTJets"
+inputSample = "WJets" # "signal" "WJets" "TTJets"
 zoom = True
 
 #ROOT Options
@@ -171,7 +171,7 @@ for i in range(nEvents):
             MVA_min2 = WPs['WP80']['EE']
       
       #Generated Electron Pt
-      if abs(lepId) == 11 and abs(lepEta) < 2.5:
+      if abs(lepId) == 11:# and abs(lepEta) < 2.5:
          #Cut ID
          for i in range(1,5):
             if cutID >= i:

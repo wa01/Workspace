@@ -8,7 +8,7 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "signal" # "signal" "WJets" "TTJets"
+inputSample = "WJets" # "signal" "WJets" "TTJets"
 zoom = True
 
 #ROOT Options

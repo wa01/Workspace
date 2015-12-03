@@ -3,13 +3,15 @@ import ROOT
 import os, sys
 import math
 from array import *
-from Workspace.HEPHYPythonTools.helpers import getChunks, getChain#, getPlotFromChain, getYieldFromChain
+from Workspace.HEPHYPythonTools.helpers import getChunks, getChain, getObjDict#, getPlotFromChain, getYieldFromChain
 from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "TTJets" # "signal" "WJets" "TTJets"
+inputSample = "signal" # "signal" "WJets" "TTJets"
 zoom = False
+save = False
+nEles = 1 # 1,2,1or2
 
 #ROOT Options
 ROOT.gROOT.Reset() #re-initialises ROOT
@@ -95,7 +97,6 @@ if zoom == True:
 deltaRcut = 0.3
 #deltaPcut = 0.5 #in '%'
 
-#IDs: 0 - none, 1 - veto (~95% eff), 2 - loose (~90% eff), 3 - medium (~80% eff), 4 - tight (~70% eff)
 #genSel = "ngenLep == 1 && abs(genLep_pdgId[0]) == 11 && abs(genLep_eta[0]) < 2.5" #nLepGood == 1 biases your efficiency & 5 GeV cut in LepGood #match gen cuts to LepGood cuts (eta, pt) 
 #genSel1= "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 1)" # == ngenLep
 #genSel2 = "(Sum$(abs(genLepFromTau_pdgId) == 11 && abs(genLepFromTau_eta) < 2.5) == 1)" # == ngenLepFromTau
@@ -103,6 +104,7 @@ deltaRcut = 0.3
 #matchSel1 = "(Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) != 0)"
 #matchSel2 = "(Min$(" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && LepGood_mcMatchId != 0)) != 0)"
 
+#IDs: 0 - none, 1 - veto (~95% eff), 2 - loose (~90% eff), 3 - medium (~80% eff), 4 - tight (~70% eff)
 cutSel = "LepGood_SPRING15_25ns_v1 >="
 
 #MVA IDs
@@ -128,92 +130,116 @@ nEvents = elist.GetN()
 
 #Event Loop
 for i in range(nEvents):
-   #if i == 100000: break
+   #if i > 7: break
    Events.GetEntry(elist.GetEntry(i))
 
    #Number of generated and reconstructed leptons
    ngenLep = Events.GetLeaf("ngenLep").GetValue()
+   #ngenLepFromTau = Events.GetLeaf("ngenLepFromTau").GetValue()
    nLep = Events.GetLeaf("nLepGood").GetValue()
-   if ngenLep == 0 or nLep == 0: continue
    
-   #print "ngen: ", ngenLep, "nlepgood: ", nLep
-   #Looping over generated leptons 
-   for igenlep in range(int(ngenLep)):
-      genLepId = Events.GetLeaf("genLep_pdgId").GetValue(igenlep)
-      genLepPt = Events.GetLeaf("genLep_pt").GetValue(igenlep)
-      genLepEta = Events.GetLeaf("genLep_eta").GetValue(igenlep)
-      genLepPhi = Events.GetLeaf("genLep_phi").GetValue(igenlep)
-
-      if abs(genLepId) != 11 or abs(genLepEta) > 2.5: continue #picking out electrons within acceptance (add pt > 5?)
-       
-      deltaRmin = 1000.0
-      matchIndex = -1
-      
-      #Calculating dR between gen and reco electron 
-      for ilep in range(int(nLep)):
-         lepId = Events.GetLeaf("LepGood_pdgId").GetValue(ilep)
-         lepEta = Events.GetLeaf("LepGood_eta").GetValue(ilep)
-         lepPhi = Events.GetLeaf("LepGood_phi").GetValue(ilep)
-         
-         if abs(lepId) != 11 or abs(lepEta) > 2.5: continue #picking out reco electron within acceptance
-         
-         deltaR = math.sqrt((genLepEta - lepEta)**2 + (genLepPhi - lepPhi)**2)
-         #print "dR: ", deltaR 
-         if deltaR < deltaRmin: #identifing reco electron with minimum dR
-            deltaRmin = deltaR
-            matchIndex = ilep
-      #print "dRmin, index: ", deltaRmin," ", matchIndex
-      if matchIndex == -1 or deltaRmin == 1000.0: continue #skip if no single reco electron within acceptance
-      
-      #Picking reco electron via minimum dR
-      lepId = Events.GetLeaf("LepGood_pdgId").GetValue(matchIndex)   
-      lepEta = Events.GetLeaf("LepGood_eta").GetValue(matchIndex)
-      lepPhi = Events.GetLeaf("LepGood_phi").GetValue(matchIndex)
-      lepPt = Events.GetLeaf("LepGood_pt").GetValue(matchIndex)
-      lepMatchId = Events.GetLeaf("LepGood_mcMatchId").GetValue(matchIndex)
-      cutID = Events.GetLeaf("LepGood_SPRING15_25ns_v1").GetValue(matchIndex)
-      mvaID = Events.GetLeaf("LepGood_mvaIdSpring15").GetValue(matchIndex)
-   
-      #Histogram filling   
-      #MVA ID cut (dependent on electron pt and detector region)
-      if lepPt <= ptSplit:
-         if lepEta < ebSplit:
-            MVA_min1 = WPs['WP80']['EB1_lowPt']
-            MVA_min2 = WPs['WP90']['EB1_lowPt']
-         elif lepEta >= ebSplit and lepEta < ebeeSplit:
-            MVA_min1 = WPs['WP80']['EB2_lowPt']
-            MVA_min2 = WPs['WP90']['EB2_lowPt']
-         elif lepEta >= ebeeSplit: # < 2.5 (applied already in LepGood)
-            MVA_min1 = WPs['WP80']['EE_lowPt']
-            MVA_min2 = WPs['WP90']['EE_lowPt']
-      elif lepPt > ptSplit:
-         if lepEta < ebSplit:
-            MVA_min1 = WPs['WP80']['EB1']
-            MVA_min2 = WPs['WP90']['EB1']
-         elif lepEta >= ebSplit and lepEta < ebeeSplit:
-            MVA_min1 = WPs['WP80']['EB2']
-            MVA_min2 = WPs['WP90']['EB2']
-         elif lepEta >= ebeeSplit: # < 2.5 (applied already in LepGood)
-            MVA_min1 = WPs['WP80']['EE']
-            MVA_min2 = WPs['WP90']['EE']
-      
-      #Generated Electron Pt
-      if abs(genLepId) == 11 and abs(genLepEta) < 2.5:
-         hists[0].Fill(genLepPt)
-      
-         if lepMatchId != 0 and deltaRmin < deltaRcut: 
-            
-            #Cut ID
-            for i in range(1,5):
-               if cutID >= i:
-                  hists[i].Fill(genLepPt)
-            
-            #MVA ID   
-            if mvaID >= MVA_min1:
-               hists[5].Fill(genLepPt)
-            if mvaID >= MVA_min2:
-               hists[6].Fill(genLepPt)
+   if ngenLep == 0: continue
  
+   #Generated 
+   genLeps = [getObjDict(Events, "genLep_", ["pdgId","pt","eta","phi"],i) for i in range(int(ngenLep))]
+   #genLepsFromTau = [getObjDict(Events, "genLepFromTau_", ["pdgId","pt","eta","phi"],i) for i in range(int(ngenLepFromTau))]
+   genEles = [genEle for genEle in genLeps if abs(genEle['pdgId']) == 11 and abs(genEle['eta']) < 2.5] 
+   #genElesFromTau = [genEleFromTau for genEleFromTau in genLepsFromTau if abs(genEleFromTau['pdgId']) == 11 and abs(genEleFromTau['eta']) < 2.5] 
+   
+   #Reconstructed
+   recoLeps = [getObjDict(Events, "LepGood_", ["pdgId","pt", "eta", "phi", "mcMatchId", "SPRING15_25ns_v1", "mvaIdSpring15"],i) for i in range(int(nLep))]
+   recoEles = [recoEle for recoEle in recoLeps if abs(recoEle['pdgId']) == 11 and abs(recoEle['eta']) < 2.5] 
+  
+   #print "Event: ", Events.evt 
+   #print "genLeps: ", genLeps
+   #print "genEles: ", genEles
+   #
+   #print "recoLeps: ", recoLeps 
+   #print "recoEles: ", recoEles
+   
+   if ngenLep != 1 and ngenLepFromTau != 1: continue 
+   #if len(genEles) > nEles: continue
+   
+   for recoEle in recoEles: recoEle['deltaR'] = [] #empty deltaR list   
+  
+   #Calculating dR between gen and reco electrons
+   for recoEle in recoEles:
+      if ngenLep == 1 and ngenLepFromTau == 0:
+         for genEle in genEles:
+            recoEle['deltaR'].append(math.sqrt((genEle['eta'] - recoEle['eta'])**2 + (genEle['phi'] - recoEle['phi'])**2))
+         #Matching
+         if recoEle['mcMatchId'] != 0 and len(recoEle['deltaR']) != 0:
+            recoEle['deltaRmin'] = min(recoEle['deltaR'])
+            matchIndex = recoEle['deltaR'].index(recoEle['deltaRmin']) #finds index of gen electron with lowest dR
+         else: matchIndex = -1
+         recoEle['matchIndex'] = matchIndex
+         recoEle['matchIndexTau'] = -1
+ 
+      elif ngenLepFromTau == 1 and ngenLep == 0:
+         for genEle in genEles:
+            recoEle['deltaR'].append(math.sqrt((genEleFromTau['eta'] - recoEle['eta'])**2 + (genEleFromTau['phi'] - recoEle['phi'])**2))
+         #Matching
+         if recoEle['mcMatchId'] != 0 and len(recoEle['deltaR']) != 0:
+            recoEle['deltaRmin'] = min(recoEle['deltaR'])
+            matchIndexTau = recoEle['deltaR'].index(recoEle['deltaRmin']) #finds index of gen electron with lowest dR
+         else: matchIndexTau = -1
+         recoEle['matchIndexTau'] = matchIndexTau
+         recoEle['matchIndex'] = -1
+      else:
+         recoEle['matchIndex'] = -1
+         recoEle['matchIndexTau'] = -1
+         
+   #print "Event: ", Events.evt 
+   #print "recoEles: ", recoEles
+   for recoEle in recoEles:
+      #print recoEle
+      if recoEle['mcMatchId'] != 0 and (recoEle['matchIndex'] != -1 or recoEle['matchIndexTau'] != -1) and recoEle['deltaRmin'] < deltaRcut:
+         
+         #MVA ID cut (dependent on electron pt and detector region)
+         if recoEle['pt'] <= ptSplit:
+            if recoEle['eta'] < ebSplit:
+               MVA_min1 = WPs['WP80']['EB1_lowPt']
+               MVA_min2 = WPs['WP90']['EB1_lowPt']
+            elif recoEle['eta'] >= ebSplit and recoEle['eta'] < ebeeSplit:
+               MVA_min1 = WPs['WP80']['EB2_lowPt']
+               MVA_min2 = WPs['WP90']['EB2_lowPt']
+            elif recoEle['eta'] >= ebeeSplit: # < 2.5 (applied already in LepGood)
+               MVA_min1 = WPs['WP80']['EE_lowPt']
+               MVA_min2 = WPs['WP90']['EE_lowPt']
+         elif recoEle['pt'] > ptSplit:
+            if recoEle['eta'] < ebSplit:
+               MVA_min1 = WPs['WP80']['EB1']
+               MVA_min2 = WPs['WP90']['EB1']
+            elif recoEle['eta'] >= ebSplit and recoEle['eta'] < ebeeSplit:
+               MVA_min1 = WPs['WP80']['EB2']
+               MVA_min2 = WPs['WP90']['EB2']
+            elif recoEle['eta'] >= ebeeSplit: # < 2.5 (applied already in LepGood)
+               MVA_min1 = WPs['WP80']['EE']
+               MVA_min2 = WPs['WP90']['EE']
+   
+         #Cut ID
+         for i in range(1,5):
+            if recoEle['SPRING15_25ns_v1'] >= i:
+               if recoEle['matchIndex'] != 0 and recoEle['matchIndexTau'] == -1: hists[i].Fill(genEles[recoEle['matchIndex']]['pt'])
+               elif recoEle['matchIndexTau'] != 0 and recoEle['matchIndex'] == -1: hists[i].Fill(genElesFromTau[recoEle['matchIndexTau']]['pt'])
+         #MVA ID   
+         if recoEle['mvaIdSpring15'] >= MVA_min1:
+            if recoEle['matchIndex'] != 0 and recoEle['matchIndexTau'] == -1: hists[5].Fill(genEles[recoEle['matchIndex']]['pt'])
+            elif recoEle['matchIndexTau'] != 0 and recoEle['matchIndex'] == -1: hists[i].Fill(genElesFromTau[recoEle['matchIndexTau']]['pt'])
+         if recoEle['mvaIdSpring15'] >= MVA_min2:
+            if recoEle['matchIndex'] != 0 and recoEle['matchIndexTau'] == -1: hists[6].Fill(genEles[recoEle['matchIndex']]['pt'])
+            elif recoEle['matchIndexTau'] != 0 and recoEle['matchIndex'] == -1: hists[i].Fill(genElesFromTau[recoEle['matchIndexTau']]['pt'])
+   
+   #Histogram filling   
+   for genEle in genEles:
+      if ngenLep == 1 and ngenLepFromTau == 0:
+         if abs(genEle['pdgId']) == 11 and abs(genEle['eta']) < 2.5 and len(genEles) == nEles:
+            hists[0].Fill(genEle['pt'])
+   for genEleFromTau in genElesFromTau:
+      if ngenLepFromTau == 1 and ngenLep == 0:
+         if abs(genEleFromTau['pdgId']) == 11 and abs(genEleFromTau['eta']) < 2.5 and len(genElesFromTau) == nEles:
+            hists[0].Fill(genEleFromTau['pt'])
+   
 ##################################################################################Canvas 1#############################################################################################
 c1 = ROOT.TCanvas("c1", "Canvas 1", 1800, 1500)
 c1.Divide(1,2)
@@ -365,13 +391,14 @@ ROOT.gPad.Update()
 c1.Modified()
 c1.Update()
 
-#Write to file
-savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/loop/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
-
-if not os.path.exists(savedir):
-   os.makedirs(savedir)
-
-#Save to Web
-c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".root")
-c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".png")
-c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".pdf")
+if save == True:
+   #Write to file
+   savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/loop/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
+   
+   if not os.path.exists(savedir):
+      os.makedirs(savedir)
+   
+   #Save to Web
+   c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".root")
+   c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".png")
+   c1.SaveAs(savedir + "electronIDeff_loop_" + inputSample + z + ".pdf")

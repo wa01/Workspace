@@ -7,8 +7,10 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 from Workspace.DegenerateStopAnalysis.toolsMateusz.drawFunctions import *
 
 #Input options
-inputSample = "TTJets" # "signal" "WJets" "TTJets"
+inputSample = "signal" # "signal" "WJets" "TTJets"
 zoom = False
+save = False
+nEles = "01" # 01,01tau,1,2
 
 #ROOT Options
 ROOT.gROOT.Reset() #re-initialises ROOT
@@ -86,19 +88,55 @@ if zoom == True:
    z = "_lowPt"
 
 #Selection criteria
-deltaR = "sqrt((genLep_eta - LepGood_eta)^2 + (genLep_phi - LepGood_phi)^2)"
-deltaRtau = "sqrt((genLepFromTau_eta - LepGood_eta)^2 + (genLepFromTau_phi - LepGood_phi)^2)"
-
-#deltaP = "abs((genLep_pt - LepGood_pt)/genLep_pt)" #pt difference: gen wrt. reco in %
-
 deltaRcut = 0.3
 #deltaPcut = 0.5 #in '%'
+#deltaP = "abs((genLep_pt - LepGood_pt)/genLep_pt)" #pt difference: gen wrt. reco in %
+
+#single-lepton (semileptonic) events
+if nEles == "01":
+   #Generated electron selection
+   nSel = "ngenLep == 1" #removes dileptonic events
+   genSel1 = "(abs(genLep_pdgId[0]) == 11 && abs(genLep_eta[0]) < 2.5)" #electron selection #index [0] ok since (only element)
+   genSel = nSel + "&&" + genSel1
+
+   #Reconstructed electron selection
+   deltaR = "sqrt((genLep_eta[0] - LepGood_eta)^2 + (genLep_phi[0] - LepGood_phi)^2)"
+   
+   matchSel = "(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0) <" + str(deltaRcut) +\
+   "&& (" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) != 0)"
+
+#if nEles == "01tau":
+#   #Generated electron selection
+#   nSel = "((ngenLep == 1) != (ngenLepFromTau == 1))" #removes dileptonic events
+#   genSel1 = "((abs(genLep_pdgId[0]) == 11 && abs(genLep_eta[0]) < 2.5) || (abs(genLepFromTau_pdgId[0]) == 11 && abs(genLepFromTau_eta[0]) < 2.5))" #electron selection #index [0] ok since (only element)
+#   #genSel = nSel# + "&&" + genSel1
+#
+#   #Reconstructed electron selection
+#   deltaR = "sqrt((genLep_eta[0] - LepGood_eta)^2 + (genLep_phi[0] - LepGood_phi)^2)"
+#   deltaRtau = "sqrt((genLepFromTau_eta[0] - LepGood_eta)^2 + (genLepFromTau_phi[0] - LepGood_phi)^2)"
+#   
+#   matchSel = "(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0) <" + str(deltaRcut) +\
+#   "&& (" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) != 0)" +\
+#   "||(" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0) <" + str(deltaRcut) +\
+#   "&& (" + deltaRtau +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) != 0)"
+
+#single-electron events (semileptonic & dileptonic)
+elif nEles == "1":
+   #Generated electron selection
+   nSel = "ngenLep > 0" #redundant with genSel2 #nLepGood > 0 introduces bias
+   genSel1 = "(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5)" #electron selection (includes dielectron evts) #ngenLep == 1 would remove dileptonic events # index [0] does not include single-electron events with muon as leading lepton
+   genSel2 = "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 1)" # = number of electrons (includes dileptonic and semileptonic events) 
+   genSel = nSel + "&&" + genSel1 + "&&" + genSel2
+
+elif nEles == "2":
+   nSel = "ngenLep == 2" #does not include single-lepton events 
+   genSel1 = "(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5)" #electron selection (includes dielectron evts) #ngenLep == 1 would remove dileptonic events
+   genSel2 = "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 2)" # = number of electrons (includes dilepton events only) 
+   genSel = nSel + "&&" + genSel1 + "&&" + genSel2
+
+
 
 #IDs: 0 - none, 1 - veto (~95% eff), 2 - loose (~90% eff), 3 - medium (~80% eff), 4 - tight (~70% eff)
-nSel = "ngenLep > 0 && nLepGood > 0" #or == 1, == 2
-genSel = "(Sum$(abs(genLep_pdgId) == 11 && abs(genLep_eta) < 2.5) == 1)" # == ngenLep
-matchSel = "(Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) <" + str(deltaRcut) + "&& Min$(" + deltaR +"*(abs(LepGood_pdgId) == 11 && abs(LepGood_eta) < 2.5 && LepGood_mcMatchId != 0)) != 0)"
-
 cutSel = "LepGood_SPRING15_25ns_v1 >="
 
 ##################################################################################Canvas 1#############################################################################################
@@ -110,7 +148,7 @@ c1.cd(1)
 #Generated electrons
 hists = []
 
-hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel, bins)) #"(" + genSel + "||" + genSel2 + ") &&" + nGenLep
+hists.append(makeHistVarBins(Events, "genLep_pt", genSel, bins)) #"(" + genSel + "||" + genSel2 + ") &&" + nGenLep
 hists[0].SetName("genEle")
 hists[0].SetTitle("Electron p_{T} for Various IDs (Veto, Loose, Medium, Tight, MVA)")
 hists[0].GetXaxis().SetTitle("Generated Electron p_{T} / GeV")
@@ -128,7 +166,7 @@ alignStats(hists[0])
 
 #Electron Cut IDs
 for i in range(1,5): #hists 1-4
-   hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel + "&&" + matchSel + "&& (" + cutSel + str(i) + ")", bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&& (" + cutSel + str(i) + ")"
+   hists.append(makeHistVarBins(Events, "genLep_pt", genSel + "&&" + matchSel + "&& (" + cutSel + str(i) + ")", bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&& (" + cutSel + str(i) + ")"
    hists[i].SetFillColor(0)
    hists[i].SetLineWidth(3)
    hists[i].Draw("same")
@@ -169,7 +207,7 @@ for i,WP in enumerate(WPs):
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebSplit) + "&& LepGood_eta <" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB2']) + ") || \
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EE']) + "))"
    
-   hists.append(makeHistVarBins(Events, "genLep_pt", nSel + "&&" + genSel + "&&" + matchSel + "&&" + mvaSel, bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&&" + mvaSel
+   hists.append(makeHistVarBins(Events, "genLep_pt", genSel + "&&" + matchSel + "&&" + mvaSel, bins)) #"((" + genSel + "&&" + matchSel + ") || (" + genSel2 + "&&" + matchSel2 + ")) &&" + nGenLep + "&&" + mvaSel
    hists[5+i].SetName("electrons_mva_" + WP)
 
 hists[5].Draw("same")
@@ -288,13 +326,14 @@ ROOT.gPad.Update()
 c1.Modified()
 c1.Update()
 
-#Write to file
-savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
-
-if not os.path.exists(savedir):
-   os.makedirs(savedir)
-
-#Save to Web
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".root")
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".png")
-c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".pdf")
+if save == True:
+   #Write to file
+   savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/combined/efficiency/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
+   
+   if not os.path.exists(savedir):
+      os.makedirs(savedir)
+   
+   #Save to Web
+   c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".root")
+   c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".png")
+   c1.SaveAs(savedir + "electronIDeff_" + inputSample + z + ".pdf")
