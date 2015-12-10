@@ -113,47 +113,47 @@ def fillTree(filename):
        lhe.event = nevent
        inev = -1
        if( not(lhe.event % 10000) ):
-#	   break
-	 print lhe.event
+#           break
+         print lhe.event
      if( re.match('\<\/event\>',line) ):
        switch=0
        t.Fill()
        for var in varsI:
     #exec('lhe.'+var+' = 0')
-	  setattr(lhe,var,0)
+          setattr(lhe,var,0)
        for var in varsD:
-	  setattr(lhe,var,0)
-	 #exec('lhe.'+var+' = 0.')
+          setattr(lhe,var,0)
+         #exec('lhe.'+var+' = 0.')
      if(switch):
        l = filter( lambda x: x, re.split('\s+', line) )
        if( len(l)!=13 ):
-	 continue
+         continue
        inev += 1
        if( re.match('^\-?24$',l[0]) ):
-	 inev -= 1
-	 continue
+         inev -= 1
+         continue
        if( inev==0 or inev==1 ):
-	 indpar = 0
-	 im = (inev % 2) + 1
+         indpar = 0
+         im = (inev % 2) + 1
        elif( inev==2 or inev==3 ):
-	 indpar = 1
-	 im = 1
-	 if( re.match('-1000006',l[0]) ):
-	   im = 2
+         indpar = 1
+         im = 1
+         if( re.match('-1000006',l[0]) ):
+           im = 2
        elif( inev>3 and inev<12 ):
-	 indpar = ( (inev-4) % 4 ) + 2
-	 im = int((inev-4) / 4) + 1
+         indpar = ( (inev-4) % 4 ) + 2
+         im = int((inev-4) / 4) + 1
        else:
-	 indpar = 6
-	 im = inev - 12 + 1
-	 lhe.nj += 1   
+         indpar = 6
+         im = inev - 12 + 1
+         lhe.nj += 1   
 
        for ivar, var in enumerate(pvarsI):
          exec('lhe.'+particles[indpar]+str(im)+var+' = int(float(l['+str(ipvarsI[ivar])+']))')
        for ivar, var in enumerate(pvarsD):
          exec('lhe.'+particles[indpar]+str(im)+var+' = float(l['+str(ipvarsD[ivar])+'])')
 
-#	 print line, particles[indpar], str(im)
+#         print line, particles[indpar], str(im)
    print 'read ',nevent,' events'
 
 #   t.Print()

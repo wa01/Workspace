@@ -24,12 +24,18 @@ def AMS1 (s,b,sysUnc=0.2):
   ams1 = math.sqrt(2*((s+b)*math.log((s+b)/b0)-s-b+b0 )+ (b-b0)*(b-b0)/sysUnc2  )
   return ams1
 
+def RATIO (s,b,sysUnc=0.2 ):
+    return lambda s,b, sysUnc: s/float(b) if b!=0 else -1
+
+
+
 fomFuncs= {
                 "SOB"         : lambda s,b,sysUnc  : s/math.sqrt(b) if b!=0 else -1 ,
                 "SOBSYS"      : lambda s,b,sysUnc : s/math.sqrt(b+(sysUnc*sysUnc*b*b) ) if b!=0 else -1 ,
                 "AMS"         : lambda s,b,sysUnc : math.sqrt(2*((s+b)*math.log(1+1.*s/b)-s) ) if b!=0 else -1 ,
                 "AMSSYS"      : AMSSYS ,
                 "AMS1"        : AMS1   ,
+                "RATIO"       : RATIO,  
             }
 
 def calcFOMs(s,b,sysUnc=0.2,fom=None):
@@ -40,6 +46,9 @@ def calcFOMs(s,b,sysUnc=0.2,fom=None):
     for f in fomFuncs:
       ret[f]=fomFuncs[f](s,b,sysUnc)
     return ret
+
+
+
 
 
 
@@ -64,21 +73,41 @@ def getFOMFromTH2F(sHist,bHist,fom="AMSSYS",sysUnc=0.2):
       fomHist.SetBinContent(x,y,fomVal) 
   return fomHist   
 
-def getFOMFromTH1F(sHist,bHist,fom="AMSSYS",sysUnc=0.2): 
-  assert sHist.GetNbinsX() == bHist.GetNbinsX(), "xBins dont match" 
-  nBinX= sHist.GetNbinsX() 
-  fomHist=sHist.Clone() 
-  fomHist.Reset() 
-  fomHist.SetMarkerSize(0.8) 
-  fomHist.SetName("FOM_%s_"%fom+fomHist.GetName() ) 
-  for x in range(1,nBinX+1): 
-      s=sHist.GetBinContent(x) 
-      b=bHist.GetBinContent(x) 
-      #print s,b,
-      fomVal= fomFuncs[fom](s,b,sysUnc) 
-      #print fomVal
-      fomHist.SetBinContent(x,fomVal) 
-  return fomHist   
+def getFOMFromTH1F(sHist,bHist,fom="AMSSYS",sysUnc=0.2,debug=False,norm=False): 
+    if debug:
+        print sHist,bHist
+        sHist.Print('all')
+        bHist.Print('all')
+
+    if fom.lower()=="ratio": 
+        retHist = sHist.Clone()
+        retHist.Scale(1./retHist.Integral())
+        denomHist = bHist.Clone()
+        denomHist.Scale(1./denomHist.Integral())
+        retHist.Divide(denomHist)
+        
+    else:
+        assert sHist.GetNbinsX() == bHist.GetNbinsX(), "xBins dont match" 
+        retHist=sHist.Clone() 
+        nBinX= sHist.GetNbinsX() 
+        retHist.Reset() 
+        retHist.SetMarkerSize(0.8) 
+        retHist.SetName("FOM_%s_"%fom+retHist.GetName() ) 
+        for x in range(1,nBinX+1): 
+            s=sHist.GetBinContent(x) 
+            b=bHist.GetBinContent(x) 
+            #print s,b,
+            fomVal= fomFuncs[fom](s,b,sysUnc) 
+            #print fomVal
+            retHist.SetBinContent(x,fomVal) 
+
+    if norm:
+        sNorm = 1./ sHist.Integral()
+        bNorm = 1./ bHist.Integral()
+        totNorm = sNorm/bNorm
+        retHist.Scale(totNrom)
+
+    return retHist   
 
 
 def getHistMax(hist):
@@ -174,4 +203,8 @@ def getROC(sHist, bHist, fom="AMSSYS", sysUnc=0.2,savePath=''):
     roc.SetPoint(x,sEff,bRej)
   return {'roc':roc,'sTot':sTot, 'bTot':bTot}
   #return roc
+
+
+
+
 

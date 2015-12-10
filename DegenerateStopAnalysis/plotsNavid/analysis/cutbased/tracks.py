@@ -97,4 +97,17 @@ sr1TrkOpp90J1   = CutClass ("sr1TrksOpp90J1",
 
 
 
+import dmt
+
+dmtBM1Trk       = CutClass ("dmtR1Trk",
+                               [[ "ntrackOpp90Jet12_pt2_%s"%x,  "ntrackOpp90Jet12_2 > %s"%x     ] for x in range(12) ]+
+                               [[ "ntrackOpp90Jet12_pt2p5_%s"%x,  "ntrackOpp90Jet12_2p5 > %s"%x     ] for x in range(12) ]+
+                               [[ "ntrackOpp90Jet12_pt3_%s"%x,  "ntrackOpp90Jet12_3 > %s"%x     ] for x in range(12) ]
+                          
+                              ,baseCut = dmtBM1R1
+                          )
+
+
+
+
 
