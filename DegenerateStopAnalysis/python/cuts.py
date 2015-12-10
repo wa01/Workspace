@@ -57,22 +57,31 @@ sr1Loose   = CutClass ("sr1Loose",    [
                   )
 
 
-sr1abc   = CutClass ("sr1abc",    [
-                               ["SR1a","mt<60"],
+sr1abc_ptbin   = CutClass ("sr1abc_ptbinned",    [
+                               #["SR1a","mt<60"],
                                   ["SR1a_1",joinCutStrings(   ["mt<60",         btw("lepPt",5,12)]  )],
                                   ["SR1a_2",joinCutStrings(   ["mt<60",         btw("lepPt",12,20)] )],
                                   ["SR1a_3",joinCutStrings(   ["mt<60",         btw("lepPt",20,30)] )],
-                               ["SR1b",btw("mt",60,88)],
+                               #["SR1b",btw("mt",60,88)],
                                   ["SR1b_1",joinCutStrings(   [btw("mt",60,88), btw("lepPt",5,12)]  )],
                                   ["SR1b_2",joinCutStrings(   [btw("mt",60,88), btw("lepPt",12,20)] )],
                                   ["SR1b_3",joinCutStrings(   [btw("mt",60,88), btw("lepPt",20,30)] )],
-                               ["SR1c","mt>88"],
+                               #["SR1c","mt>88"],
                                   ["SR1c_1",joinCutStrings(   ["mt>88",         btw("lepPt",5,12)]  )],
                                   ["SR1c_2",joinCutStrings(   ["mt>88",         btw("lepPt",12,20)] )],
                                   ["SR1c_3",joinCutStrings(   ["mt>88",         btw("lepPt",20,30)] )],
                            ] , 
                   baseCut = sr1,
                   )
+
+sr1abc   = CutClass ("sr1abc",    [
+                               ["SR1a","mt<60"],
+                               ["SR1b",btw("mt",60,88)],
+                               ["SR1c","mt>88"],
+                           ] , 
+                  baseCut = sr1,
+                  )
+
 
 
   

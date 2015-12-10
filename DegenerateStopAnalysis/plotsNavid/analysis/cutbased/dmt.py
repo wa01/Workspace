@@ -97,7 +97,7 @@ class R3():
     r3.SetPoint(2,1,-10)
     r3.SetPoint(3,left,-10)
     r3.SetPoint(4,left,top)
-    r3.SetLineColor(ROOT.kSpring)
+    r3.SetLineColor(ROOT.kMagenta)
     r3.SetLineWidth(2)
     self.r=r3
 
@@ -219,7 +219,7 @@ regions = [
 #r3def = (0.8,0.8,1)
 
 r1bm1 = (0.8,-0.5)
-r2bm1 = (1.2,-1000,0.8,0.3)
+r2bm1 = (1.2,-1000,0.8,0.5)
 r3bm1 = (0.8,0.8,0.8)
 
 r1def = r1bm1
@@ -298,6 +298,15 @@ r3_regions = [
               ["r3_0p9_0p0_m0p5"  , r1bm1 ,  r2bm1  , (0.9,0.0,-0.5)      ],
 
 
+              ["r3_0p8_m0p3_0p3"  , r1bm1 ,  r2bm1  ,   (0.8,-0.3,0.3)        ],
+              ["r3_0p8_m0p3_0p0"  , r1bm1 ,  r2bm1  ,   (0.8,-0.3,0.0)        ],
+              ["r3_0p8_m0p3_m0p3"  , r1bm1 ,  r2bm1  ,  (0.8,-0.3,-0.3)      ],
+              ["r3_0p8_m0p3_m0p5"  , r1bm1 ,  r2bm1  ,  (0.8,-0.3,-0.5)      ],
+
+              ["r3_0p9_m0p3_0p3"  , r1bm1 ,  r2bm1  ,  (0.9,-0.3,0.3)       ],
+              ["r3_0p9_m0p3_0p0"  , r1bm1 ,  r2bm1  ,  (0.9,-0.3,0.0)       ],
+              ["r3_0p9_m0p3_m0p3"  , r1bm1 ,  r2bm1  , (0.9,-0.3,-0.3)      ],
+              ["r3_0p9_m0p3_m0p5"  , r1bm1 ,  r2bm1  , (0.9,-0.3,-0.5)      ],
 
              ]
 
@@ -306,6 +315,11 @@ r=QCosRegion("t",(1,-1), (1,-1000,0.8,0.8), (0.8,0.8,1),  x=xvar,y=yvar)
 
 
 qcosRegionBM1 = QCosRegion("BM1", r1bm1, r2bm1, r3bm1)
+
+
+dmtBM1R1=qcosRegionBM1.cut1
+dmtBM1R2=qcosRegionBM1.cut2
+dmtBM1R3=qcosRegionBM1.cut3
 
 
 

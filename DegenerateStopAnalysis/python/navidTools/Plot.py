@@ -6,8 +6,8 @@ import math
 from plotTools import Dict
 
 class Plot(dict):
-  def __init__(self, name, var, bins, decor={}):
-    super(Plot, self).__init__( name=name, var=var, bins=bins,decor=decor)
+  def __init__(self, name, var, bins, decor={},cut=''):
+    super(Plot, self).__init__( name=name, var=var, bins=bins,decor=decor,cut='')
     self.__dict__ = self 
     #if not all([x in self.__dict__ for x in ['name','tree']]):
     #  assert False,  "Cannot create sample.... Usage:  Sample(name='name', tree=ROOT.TChain, isData=0, isSignal=0, color=ROOT.kBlue)"
