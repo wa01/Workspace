@@ -1,7 +1,8 @@
 from CMGTools.RootTools.samples.samples_13TeV_RunIISpring15MiniAODv2 import *
 
 #data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
-data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v2/RunIISpring15MiniAODv2/"
+#data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v2/RunIISpring15MiniAODv2/"
+data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v2/RunIISpring15MiniAODv3/"
 
 
 

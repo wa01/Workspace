@@ -29,8 +29,8 @@ pkdGenParts = False
 verbose = False
 break_for_debug = False
 defSampleStr = "T2DegStop_300_270"
-subDir = "postProcessed_7412pass2_v2"
-#subDir = "tracksBugFix_1"
+#subDir = "postProcessed_7412pass2_v2"
+subDir = "postProcessed_7412pass2_LIPSYNC_v0"
 
 
 ROOT.gSystem.Load("libFWCoreFWLite.so")
@@ -66,7 +66,7 @@ branchKeepStrings_DATAMC = ["run", "lumi", "evt", "isData", "rho", "nVert",
                      "nLepGood", "LepGood_*", 
                      "nLepOther", "LepOther_*", 
                      "nTauGood", "TauGood_*",
-                     "track_*", "isoTrack_*",
+                     "Tracks_*", "isoTrack_*","GenTracks_*",
                      ] 
 if tracks:
     #branchKeepStrings_DATAMC.extend(["track_*","isoTrack_*"])
@@ -134,9 +134,10 @@ if options.skim=='inc':
   skimCond = "(1)"
 if options.preselect:
   #preselection = "(met_pt > 200 && Jet_pt[0]> 100 && Sum$(Jet_pt)>200 )"
-  metCut = "(met_pt>200)"
+  metCut = "(met_pt>100)"
   leadingJet110 = "((Max$(Jet_pt*(abs(Jet_eta)<2.4 && Jet_id) ) >100) >=1)"
-  HTCut    = "(Sum$(Jet_pt*(Jet_pt>30 && abs(Jet_eta)<2.4 && (Jet_id)))>200)"
+  HTCut    = "(Sum$(Jet_pt*(Jet_pt>30 && abs(Jet_eta)<2.4 && (Jet_id)))>300)"
+  #SRLOOSE  = "Sum$( LepGood_pt < 50)"
   preselection = "(%s)"%'&&'.join([metCut,leadingJet110,HTCut])
 
   print "Applying Preselection", preselection
@@ -231,13 +232,15 @@ for isample, sample in enumerate(allSamples):
     {'prefix':'Jet',  'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'id/I','btagCSV/F', 'btagCMVA/F', 'mass/F']},
   ]
   if tracks: 
-    readVectors.append(
-            {'prefix':'track'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' , 'dxy/F', 'dz/F', 'fromPV/I'] },
-                      )
+    readVectors.extend([ 
+            {'prefix':'Tracks'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' , 'dxy/F', 'dz/F', 'fromPV/I'] },
+            {'prefix':'GenTracks'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' ] },
+            {'prefix':'GenJet'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'mass/F' ] },
+            {'prefix':'GenPart'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/F' ] },
+                     ] )
   if pkdGenParts: 
     readVectors.extend([
             {'prefix':'genPartPkd'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' ] },
-            {'prefix':'GenJet'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'mass/F' ] },
 
                       ])
   if not sample['isData']: 
@@ -270,7 +273,13 @@ for isample, sample in enumerate(allSamples):
         ptString = str(minTrkPt).replace(".","p")
         trkVars = [ "ntrack_%s" ,"ntrackOppJet1_%s" ,"ntrackOppJet12_%s" , "ntrackOppJetAll_%s" , \
                     "ntrackOpp90Jet1_%s" ,"ntrackOpp90Jet12_%s" , "ntrackOpp90JetAll_%s" ,
-                    "ntrackOpp60Jet1_%s" ,"ntrackOpp60Jet12_%s" , "ntrackOpp60JetAll_%s"  ]
+                    "ntrackOpp60Jet1_%s" ,"ntrackOpp60Jet12_%s" , "ntrackOpp60JetAll_%s" ,
+                    "nGenTrack_%s" ,"nGenTrackOppJet1_%s" ,"nGenTrackOppJet12_%s" , "nGenTrackOppJetAll_%s" , \
+                    "nGenTrackOpp90Jet1_%s" ,"nGenTrackOpp90Jet12_%s" , "nGenTrackOpp90JetAll_%s" ,
+                    "nGenTrackOpp60Jet1_%s" ,"nGenTrackOpp60Jet12_%s" , "nGenTrackOpp60JetAll_%s"  ]
+
+
+
         newTrackVars.extend( [ x%ptString+"/I" for x in trkVars ] )
       newVariables.extend(newTrackVars)
       #newVariables.extend( [
@@ -370,6 +379,13 @@ for isample, sample in enumerate(allSamples):
           lepGoods =   [getObjDict(t, 'LepGood_',vars, i ) for i in range(r.nLepGood)]
           lepOthers =  [getObjDict(t, 'LepOther_',vars, i ) for i in range(r.nLepOther)]
           allLeptons = lepGoods + lepOthers
+
+
+
+          genParts   =   (getObjDict(t, 'GenPart_',['pt', 'eta', 'phi','pdgId'], i ) for i in range(r.nGenPart))
+          genLeptons = filter( lambda x: abs(x['pdgId']) in [11,13] , genParts )
+          genLeptons = sorted( genLeptons, key= lambda x: x['pt'], reverse=True)
+
 
           #selectedLepOthers = filter( isGoodLepton , lepOthers )
           #selectedLepOthers = sorted( selectedLepOthers ,key= lambda lep: lep['pt'], reverse=True)
@@ -488,6 +504,10 @@ for isample, sample in enumerate(allSamples):
           j_list=['eta','pt','phi','btagCMVA', 'btagCSV', 'id','mass']
           #if not sample['isData']: j_list.extend('partonId')
           allJets = [getObjDict(t, 'Jet_',j_list, i ) for i in range(r.nJet)]
+
+          #allGenJets = [getObjDict(t, 'GenJeti_NC_',['eta','pt','phi','mass'], i ) for i in range(t.nGenJeti_NC)]
+          cleanGenJets = [getObjDict(t, 'GenJet_',['eta','pt','phi','mass'], i ) for i in range(r.nGenJet)]
+
           #allJets = get_cmg_jets_fromStruct(r,j_list)
           #jets = filter(lambda j:j['pt']>30 and abs(j['eta'])<2.4 and j['id'], get_cmg_jets_fromStruct(r,j_list))
           jets = filter(lambda j:j['pt']>30 and abs(j['eta'])<2.4 and j['id'], allJets)
@@ -565,9 +585,10 @@ for isample, sample in enumerate(allSamples):
 
         ###############################       track variables
         if tracks:
+          ###############################     RECO Tracks
+          trackVar="Tracks"
           vars = ['pt', 'eta', 'phi', "dxy", "dz", 'pdgId' , "matchedJetIndex", "matchedJetDr", "CosPhiJet1", "CosPhiJet12", "CosPhiJetAll"]
-          tracks =   (getObjDict(t, 'track_',vars, i ) for i in range(r.ntrack))
-
+          tracks =   (getObjDict(t, '%s_'%trackVar,vars, i ) for i in range(r.nTracks))
           ntrack={ minPt : 0 for minPt in trackMinPtList}
           ntrackOppJet1={ minPt : 0 for minPt in trackMinPtList}
           ntrackOppJet12={ minPt : 0 for minPt in trackMinPtList}
@@ -578,15 +599,22 @@ for isample, sample in enumerate(allSamples):
           ntrackOpp60Jet1={ minPt : 0 for minPt in trackMinPtList}
           ntrackOpp60Jet12={ minPt : 0 for minPt in trackMinPtList}
           ntrackOpp60JetAll={ minPt : 0 for minPt in trackMinPtList}
-
           jetPtThreshold = 30
           #goodTracks = filter( )
           for track in tracks:
-            if not (abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.02 and abs( track['dz'] ) < 0.5 and track['pt']>=1.0) :
+            #if not (abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.02 and abs( track['dz'] ) < 0.5 and track['pt']>=1.0) :
+            if not (abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.1 and abs( track['dz'] ) < 0.1 and track['pt']>=1.0) :
               continue
             if abs(track['pdgId']) in [13,11]:
-              continue 
-            #if  (track["matchedJetIndex"] != -1  and track['matchedJetDr']<=0.4  ): ## track matched to a jet!  ## vetoing tracks that are matched to an ISR 
+              if len(selectedLeptons)>0 and deltaR(track, lep)<0.1:
+                #print "\n ---------- possible lepton track: will not count:   ", deltaR(track, lep)
+                assert lep == selectedLeptons[0]
+                if lep['pt']/track['pt'] < 1.1 and lep['pt']/track['pt'] > .9:
+                  #print "   yes most definitely is!"
+                  #print [lep[key] for key in ['pt','eta','phi','pdgId']]
+                  #print [track[key] for key in ['pt','eta','phi','pdgId']]
+                  #print lep, track
+                  continue
             if  ( track['matchedJetDr']<=0.4  ): ## track matched to a jet!  ## vetoing tracks that are matched to an ISR 
               #print "track matched to a Jet with deltaR:", track['matchedJetDr']
               matchedJet = allJets[int(track['matchedJetIndex'])]
@@ -594,7 +622,6 @@ for isample, sample in enumerate(allSamples):
                 # Track is matched with dr<0.4 to a jet with pt higher than jetpthtreshold. Dont want to count such a track!
                 #print "     and jet has pt greater than jetptthreshold"
                 continue
-              
             for minTrkPt in trackMinPtList:
               if track['pt'] > minTrkPt:
                 ntrack[minTrkPt]+=1
@@ -623,31 +650,6 @@ for isample, sample in enumerate(allSamples):
                   ntrackOpp60Jet12[minTrkPt]+=1
                 if track['CosPhiJetAll'] < cos150:
                   ntrackOpp60JetAll[minTrkPt]+=1
-
-
-          #break_for_debug = True        
-
-              
-
-
-
-            #print track
-
-            #if cos(track['phi']-s.jet1Phi) < 0:
-            #  for trackMinPt in trackMinPtList:
-            #    if track['pt'] > trackMinPt:
-            #      ntracksOppJet1[trackMinPt]+=1
-            #  if cos(track['phi']-s.jet1Phi) <  -sqrt(2)/2:
-            #    for trackMinPt in trackMinPtList:
-            #      if track['pt'] > trackMinPt:
-            #        ntracksOpp90ISR[trackMinPt]+=1
-
-            #for trackMinPt in trackMinPtList:
-            #  if track['pt'] > trackMinPt:
-            #    ntracks[trackMinPt]+=1
-            #    #print "added one track to", trackMinPt, ntracks[trackMinPt]
-          
-          
           for minTrkPt in trackMinPtList:
             trkPtString = str(minTrkPt).replace(".","p")
             setattr(s,"ntrack_%s"         %trkPtString         ,  ntrack[minTrkPt]   )
@@ -665,6 +667,95 @@ for isample, sample in enumerate(allSamples):
             setattr(s,"ntrackOpp60JetAll_%s"%trkPtString,  ntrackOpp60JetAll[minTrkPt]   )
           
  
+          ###############################     GEN Tracks
+          trackVar="GenTracks"
+          vars = ['pt', 'eta', 'phi', 'pdgId' , "matchedJetIndex", "matchedJetDr", "CosPhiJet1", "CosPhiJet12", "CosPhiJetAll"]
+          GenTracks     =   (getObjDict(t, '%s_'%trackVar,vars, i ) for i in range(r.nGenTracks))
+
+
+          nGenTrack={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOppJet1={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOppJet12={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOppJetAll={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp90Jet1={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp90Jet12={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp90JetAll={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp60Jet1={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp60Jet12={ minPt : 0 for minPt in trackMinPtList}
+          nGenTrackOpp60JetAll={ minPt : 0 for minPt in trackMinPtList}
+          jetPtThreshold = 30
+          #goodTracks = filter( )
+          for track in GenTracks:
+            if not (abs(track['eta']) < 2.5 and track['pt']>=1.0) :
+              continue
+            if abs(track['pdgId']) in [13]:
+              if len(genLeptons)>0 and deltaR(track, genLeptons[0]) < 0.1:
+                #print "\n ---------- possible gen lepton track: will not count:   ", deltaR(track, genLeptons[0])
+                #print [genLeptons[0][key] for key in ['pt','eta','phi','pdgId']]
+                #print [track[key] for key in ['pt','eta','phi','pdgId']]
+                if genLeptons[0]['pt']/track['pt'] < 1.1 and genLeptons[0]['pt']/track['pt'] > .9:
+                  #print "             yes most definitely is!"
+                  #print genLeptons[0], track
+                  continue
+            if  ( track['matchedJetDr']<=0.4  ): ## track matched to a jet!  ## vetoing tracks that are matched to an ISR 
+              #print "track matched to a Jet with deltaR:", track['matchedJetDr']
+              #print "\n ---------------------------"
+              #print track['matchedJetIndex'], len(allGenJets),len(cleanGenJets) , "\n"
+              #print deltaR(track,allGenJets[int(track['matchedJetIndex'])] )
+              ##print deltaR(track,allJets[int(track['matchedJetIndex'])] )
+              #print track
+              #print allGenJets[int(track['matchedJetIndex'])]
+
+              if track['matchedJetIndex'] < 15:  ## had to put this becuase the current cmgtuples have nGenJet limit of 30!! TO BE REMovED
+                #matchedJet = allGenJets[int(track['matchedJetIndex'])]
+                matchedJet = cleanGenJets[int(track['matchedJetIndex'])]
+                if matchedJet['pt'] > jetPtThreshold:
+                  # Track is matched with dr<0.4 to a jet with pt higher than jetpthtreshold. Dont want to count such a track!
+                  #print "     and jet has pt greater than jetptthreshold"
+                  continue
+            for minTrkPt in trackMinPtList:
+              if track['pt'] > minTrkPt:
+                nGenTrack[minTrkPt]+=1
+                ## tracks in the opp hemis
+                if track['CosPhiJet1'] < 0:
+                  nGenTrackOppJet1[minTrkPt]+=1
+                if track['CosPhiJet12'] < 0:
+                  nGenTrackOppJet12[minTrkPt]+=1
+                if track['CosPhiJetAll'] < 0:
+                  nGenTrackOppJetAll[minTrkPt]+=1
+                ## tracks in half a hemis (Opp cone size = 90deg )
+                ## math.cos(2.35619)= -0.7071
+                cos135 = -0.7071
+                if track['CosPhiJet1'] < cos135:
+                  nGenTrackOpp90Jet1[minTrkPt]+=1
+                if track['CosPhiJet12'] < cos135:
+                  nGenTrackOpp90Jet12[minTrkPt]+=1
+                if track['CosPhiJetAll'] < cos135:
+                  nGenTrackOpp90JetAll[minTrkPt]+=1
+                ## tracks in quart. a hemis (Opp cone size = 60deg )
+                ## math.cos(2.6179)= -0.8659
+                cos150 = -0.8659
+                if track['CosPhiJet1'] < cos150:
+                  nGenTrackOpp60Jet1[minTrkPt]+=1
+                if track['CosPhiJet12'] < cos150:
+                  nGenTrackOpp60Jet12[minTrkPt]+=1
+                if track['CosPhiJetAll'] < cos150:
+                  nGenTrackOpp60JetAll[minTrkPt]+=1
+          for minTrkPt in trackMinPtList:
+            trkPtString = str(minTrkPt).replace(".","p")
+            setattr(s,"nGenTrack_%s"         %trkPtString         ,  nGenTrack[minTrkPt]   )
+
+            setattr(s,"nGenTrackOppJet1_%s"  %trkPtString  ,  nGenTrackOppJet1[minTrkPt]   )
+            setattr(s,"nGenTrackOppJet12_%s" %trkPtString ,  nGenTrackOppJet12[minTrkPt]   )  
+            setattr(s,"nGenTrackOppJetAll_%s"%trkPtString,  nGenTrackOppJetAll[minTrkPt]   )
+
+            setattr(s,"nGenTrackOpp90Jet1_%s"  %trkPtString  ,  nGenTrackOpp90Jet1[minTrkPt]   )
+            setattr(s,"nGenTrackOpp90Jet12_%s" %trkPtString ,  nGenTrackOpp90Jet12[minTrkPt]   )  
+            setattr(s,"nGenTrackOpp90JetAll_%s"%trkPtString,  nGenTrackOpp90JetAll[minTrkPt]   )
+
+            setattr(s,"nGenTrackOpp60Jet1_%s"  %trkPtString  ,  nGenTrackOpp60Jet1[minTrkPt]   )
+            setattr(s,"nGenTrackOpp60Jet12_%s" %trkPtString ,  nGenTrackOpp60Jet12[minTrkPt]   )  
+            setattr(s,"nGenTrackOpp60JetAll_%s"%trkPtString,  nGenTrackOpp60JetAll[minTrkPt]   )
 
 
         if pkdGenParts:
@@ -752,5 +843,7 @@ for isample, sample in enumerate(allSamples):
         size=0
         counter+=1
         files=[]
-    os.system("rm -rf "+tmpDir)
+    os.system("mv %s %s"%(tmpDir, tmpDir.replace("/tmp","/done") ) )
+    #os.system("rm -rf "+tmpDir)
+
 
