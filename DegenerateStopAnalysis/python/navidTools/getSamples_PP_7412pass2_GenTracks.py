@@ -67,7 +67,7 @@ sampleDict={
           "s":          {'tree':T2DegSample           ,'name':'S300_270'  ,'color':ROOT.kRed                , 'isSignal':1 ,'isData':0    ,"lumi":mc_lumi      },# ,'sumWeights':T2Deg[1] ,'xsec':8.51615    },
           #"d":          {'tree':METDataUnblind        ,'name':"data"      , 'color':ROOT.kBlack             , 'isSignal':0 ,'isData':1    ,"weight":"(1)"  ,'lumi': data_lumi_unblinded  },
           #"dblind":     {'tree':METDataBlind          ,'name':"dblind" , 'color':ROOT.kBlack          , 'isSignal':0 ,'isData':1    ,"weight":"(1)"  ,'lumi': data_lumi_blinded  },
-          'tt':         {'tree':TTJetsSample          ,'name':'TTJets'  ,'color':ROOT.kAzure-5              , 'isSignal':0 ,'isData':0    ,"lumi":mc_lumi      }
+          #'tt':         {'tree':TTJetsSample          ,'name':'TTJets'  ,'color':ROOT.kAzure-5              , 'isSignal':0 ,'isData':0    ,"lumi":mc_lumi      }
        }
 
 getWTau=False
