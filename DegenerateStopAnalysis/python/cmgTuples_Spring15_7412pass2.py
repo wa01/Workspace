@@ -1,9 +1,7 @@
 from CMGTools.RootTools.samples.samples_13TeV_RunIISpring15MiniAODv2 import *
 
-data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
-
-
-
+data_path = "/afs/hephy.at/data/mzarucki01/cmgTuples/"
+#data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
 
 def makeSample (cmgMCcomponent,skimAnalyzerDir="skimAnalyzerCount", rootFileLocation="tree.root", treeName="tree"):
   sample = cmgMCcomponent

@@ -1,4 +1,4 @@
-#eleMisId.py
+#eleMisId2.py
 import ROOT
 import os, sys
 from Workspace.HEPHYPythonTools.helpers import getChunks, getChain#, getPlotFromChain, getYieldFromChain
@@ -8,7 +8,7 @@ from array import array
 from math import pi, sqrt #cos, sin, sinh, log
 
 #Input options
-inputSample = "WJets" # "Signal" "TTJets" "WJets"
+inputSample = "TTJets" # "Signal" "TTJets" "WJets"
 zoom = True
 save = True
 presel = True
@@ -115,32 +115,31 @@ c1.Divide(1,2)
 c1.cd(1)
 
 #Reconstructed selection
-hists_total = []
-hists_passed = []
-
-#Electron Cut IDs
-for i in range(0,4): #hists 1-4
-   hists_total.append(makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&& (" + cutSel + str(i+1) + "))", bins)) 
-   hists_passed.append(makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&&" + misMatchSel + "&& (" + cutSel + str(i+1) + "))", bins)) 
-
-   if i == 1: hists_total[0].Draw("hist")   
-   hists_passed[i].SetFillColor(0)
-   hists_passed[i].SetLineWidth(3)
-   hists_passed[i].Draw("histsame")
-
-hists_total[0].SetName("recoEle")
-hists_total[0].SetTitle("Fake (Non-Prompt) Electron p_{T} Distributions for Various IDs (" + inputSample + " Sample)")
-hists_total[0].GetXaxis().SetTitle("Reconstructed Electron p_{T} / GeV")
-hists_total[0].GetXaxis().SetTitleOffset(1.2)
-hists_total[0].GetYaxis().SetTitleOffset(1.2)
-hists_total[0].SetFillColor(ROOT.kBlue-9)
-hists_total[0].SetLineColor(ROOT.kBlack)
-hists_total[0].SetLineWidth(3)
+hist_total = makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&&" + misMatchSel + ")", bins) 
+hist_total.SetName("recoEle")
+hist_total.SetTitle("Fake (Non-Prompt) Electron p_{T} Distributions for Various IDs (" + inputSample + " Sample)")
+hist_total.GetXaxis().SetTitle("Reconstructed Electron p_{T} / GeV")
+hist_total.GetXaxis().SetTitleOffset(1.2)
+hist_total.GetYaxis().SetTitleOffset(1.2)
+hist_total.SetFillColor(ROOT.kBlue-9)
+hist_total.SetLineColor(ROOT.kBlack)
+hist_total.SetLineWidth(3)
+hist_total.Draw("hist")
 
 ROOT.gPad.SetLogy()
 ROOT.gPad.Update()
 
-alignStats(hists_total[0])
+alignStats(hist_total)
+
+hists_passed = []
+
+#Electron Cut IDs
+for i in range(1,5): #hists 1-4
+   hists_passed.append(makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&&" + misMatchSel + "&& (" + cutSel + str(i) + "))", bins)) 
+   hists_passed[i-1].SetFillColor(0)
+   hists_passed[i-1].SetLineWidth(3)
+   hists_passed[i-1].Draw("histsame")
+
 
 l1 = makeLegend()
 l1.AddEntry("recoEle", "Reconstructed Electron p_{T}", "F")
@@ -179,9 +178,7 @@ for i,WP in enumerate(WPs):
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta <" + str(ebSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB1']) + ") || \
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebSplit) + "&& LepGood_eta <" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EB2']) + ") || \
    (LepGood_pt >" + str(ptSplit) + "&& LepGood_eta >=" + str(ebeeSplit) + "&& LepGood_mvaIdSpring15 >=" + str(WPs[WP]['EE']) + "))"
-   hists_total.append(makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&&" + mvaSel + ")", bins))
    hists_passed.append(makeHistVarBins(Events, "LepGood_pt", normFactor + "*" + weight + "*(" + preSel + "&&" + recoSel + "&&" + misMatchSel + "&&" + mvaSel + ")", bins))
-
    hists_passed[4+i].SetName("electrons_mva_" + WP)
 
 hists_passed[4].Draw("histsame")
@@ -215,7 +212,7 @@ effs = []
 
 #Efficiency Veto
 for i in range (0, 6):
-   effs.append(ROOT.TEfficiency(hists_passed[i], hists_total[i])) #(passed, total)
+   effs.append(ROOT.TEfficiency(hists_passed[i], hist_total)) #(passed, total)
    effs[i].SetMarkerStyle(33)
    effs[i].SetMarkerSize(1.5)
    effs[i].SetLineWidth(2)
@@ -229,6 +226,9 @@ ROOT.gPad.SetGridy()
 effs[0].Draw("AP") 
 ROOT.gPad.Update()
 effs[0].GetPaintedGraph().GetXaxis().SetLimits(xmin,xmax)
+#effs[0].GetPaintedGraph().GetYaxis().SetLimits(0,1)
+effs[0].GetPaintedGraph().GetYaxis().SetMinimum(0)
+effs[0].GetPaintedGraph().GetYaxis().SetMaximum(1)
 #effs[0].GetPaintedGraph().GetXaxis().SetNdivisions(510, 1)
 effs[0].GetPaintedGraph().GetXaxis().CenterTitle()
 effs[0].GetPaintedGraph().GetYaxis().CenterTitle()
@@ -284,12 +284,12 @@ c1.Update()
 
 #Write to file
 if save == True:
-   savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/misID/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
+   savedir = "/afs/hephy.at/user/m/mzarucki/www/plots/electronReconstruction/electronID/misID2/" #web address: http://www.hephy.at/user/mzarucki/plots/electronReconstruction/electronIdEfficiency
    
    if not os.path.exists(savedir):
       os.makedirs(savedir)
    
    #Save to Web
-   c1.SaveAs(savedir + "eleMisID_" + inputSample + z + ".root")
-   c1.SaveAs(savedir + "eleMisID_" + inputSample + z + ".png")
-   c1.SaveAs(savedir + "eleMisID_" + inputSample + z + ".pdf")
+   c1.SaveAs(savedir + "eleMisID2_" + inputSample + z + ".root")
+   c1.SaveAs(savedir + "eleMisID2_" + inputSample + z + ".png")
+   c1.SaveAs(savedir + "eleMisID2_" + inputSample + z + ".pdf")
