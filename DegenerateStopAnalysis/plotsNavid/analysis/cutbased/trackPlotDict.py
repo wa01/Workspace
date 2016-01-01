@@ -1,6 +1,4 @@
-from Workspace.DegenerateStopAnalysis.navidTools.Plot import Plot, Plots
-from Workspace.DegenerateStopAnalysis.navidTools.plotTools import makeDecorHistFunc, makeDecorAxisFunc
-from Workspace.DegenerateStopAnalysis.navidTools.CutTools import *
+from Workspace.DegenerateStopAnalysis.navidTools.NavidTools import *
 from Workspace.DegenerateStopAnalysis.cuts import *
 
 
@@ -14,7 +12,7 @@ hemicos=lambda x: round( math.cos(math.pi- 0.5*(x* math.pi/180)),3)
 cosines = {  x:hemicos(x) for x in hemiList }   ### corresponding to 90, 135, 150 degree diff between jet and track
 
 
-def trackCut(trk="Tracks",trkPt=2.5,trkEta=2.5 ,pdgs=[13],jetPt=30,jetOpt="",dxy=0.2, dz=0.2, hemi=0, opp="12"):
+def trackCut(trk="Tracks",trkPt=1,trkEta=2.5 ,pdgs=[13],jetPt=30,jetOpt="",dxy=0.2, dz=0.2, hemi=0, opp="12"):
     trackCuts = []
     if trk=="Tracks":
         jt= "Jet"
@@ -39,10 +37,57 @@ def trackCut(trk="Tracks",trkPt=2.5,trkEta=2.5 ,pdgs=[13],jetPt=30,jetOpt="",dxy
     return "(%s)"%" && ".join(trackCuts) 
 
 
-def trkSelName ( d ):
-    name = "n{trk}_Pt{trkPt}_{jetOpt}JetTrks_Opp{hemi}Jet{opp}".format( **d) 
+def trkSelName ( d , multip=True):
+    if multip:
+        name = "n"
+    else:
+        name = ""
+
+    name += "{trk}".format(**d)
+    if d.has_key("trkPt"):
+        name += "_Pt{trkPt}".format( **d) 
     name = name.replace(".","p")
+    if d.has_key('jetOpt'):
+        if not d['jetOpt']:
+            name += "_allTrks"
+        else:
+            assert d['jetOpt'].lower() in ['veto','only']
+            name += "_{jetOpt}JetTrks".format( **d) 
+    if d.has_key('hemi'):
+        if not d['hemi'] or d['hemi']==360:
+            name += "".format( **d) 
+        else:
+            assert d['opp'] in ["12", "1", "All"]
+            name += "_Opp{hemi}Jet{opp}".format( **d) 
     #name = "n{trk}_Pt{trkPt}_{jetOpt}Jets_Opp{hemi}Jet{opp}".format( trk=trk, trkPt=trkPt, jetPt=jetPt, jetOpt=jetOpt, hemi=hemi, opp=opp )
+    name.format(**d)
+    return name
+
+
+def trkTitle(paramDict, multip=True):
+    d= paramDict.copy()
+    name = "{trk}"
+    if multip:
+        name += " Multip"
+    if d.has_key("trkPt"):
+        name += " w/ trkPt>{trkPt}"
+    if d.has_key('jetOpt'):
+        if not d['jetOpt']:
+            name += " AllTracks"
+        else:
+            assert d['jetOpt'].lower() in ['veto','only']
+            d['jetOpt']=d['jetOpt'].upper()
+            name += " JetTrks {jetOpt} For JetPt>{jetPt}"
+            
+    if d.has_key('hemi'):
+        if not d['hemi'] or d['hemi']==360:
+            name += ""
+        else:
+            assert d['opp'] in ["12", "1", "All"]
+            name += " {hemi}Sector Opp To Jet{opp}"
+    #name = "n{trk}_Pt{trkPt}_{jetOpt}Jets_Opp{hemi}Jet{opp}".format( trk=trk, trkPt=trkPt, jetPt=jetPt, jetOpt=jetOpt, hemi=hemi, opp=opp )
+    name= name.format(**d)
+    name = name.replace(".","p")
     return name
 
 def nTracks(trk="Tracks",trkPt=2.5,trkEta=2.5 ,pdgs=[13],jetPt=30,jetOpt="veto",dxy=0.1, dz=0.1, hemi=0, opp="12",makeName=False, gt=None):
@@ -57,91 +102,40 @@ def nTracks(trk="Tracks",trkPt=2.5,trkEta=2.5 ,pdgs=[13],jetPt=30,jetOpt="veto",
         return nTrks
 
 
-sr1TrkDicts = [ 
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
- 
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
+#trkMultipParams = [ 
+#                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
+#                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
+#              ] 
 
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
 
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"Tracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
- 
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':0, 'opp':"12"  } ,  
- 
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':180, 'opp':"12"  } ,  
+trkMultipParams = [
+        { 'trk':trkVar,'trkPt':trkPt,'trkEta':2.5 ,'pdgs':[],'jetPt':jetPt,'jetOpt':jetOpt,'dxy':0.1, 'dz':0.1, 'hemi':hemi, 'opp':opp  } 
+            for trkVar in ["Tracks","GenTracks"]
+            for trkPt in [1,1.5,2,2.5,3,3.5]
+            for jetPt in [30,45,60]
+            for jetOpt in ['veto','only','']  
+            for hemi in [270,180,90]
+            for opp in ['1','12','All']
+            ]
+trkMultipParams.extend([
+        { 'trk':trkVar,'trkPt':trkPt,'trkEta':2.5 ,'pdgs':[],'jetPt':jetPt,'jetOpt':jetOpt,'dxy':0.1, 'dz':0.1, 'hemi':hemi, 'opp':opp  } 
+            for trkVar in ["Tracks","GenTracks"]
+            for trkPt in [1,1.5,2,2.5,3,3.5]
+            for jetPt in [30,45,60]
+            for jetOpt in ['veto','only','']  
+            for hemi in ['']
+            for opp in ['']
+           ])
 
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':90, 'opp':"12"  } ,  
 
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':30,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':45,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"",'dxy':0.1, 'dz':0.1,     'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"only",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-                 { 'trk':"GenTracks",'trkPt':2.5,'trkEta':2.5 ,'pdgs':[13],'jetPt':60,'jetOpt':"veto",'dxy':0.1, 'dz':0.1, 'hemi':270, 'opp':"12"  } ,  
-              ] 
+
+
+
  
 
 sr1TrkCuts= {}
-for trkCut in sr1TrkDicts: 
+for trkCut in trkMultipParams: 
+    #print trkCut
     trkCutName = trkSelName(trkCut)
     sr1TrkCuts[trkCutName]={}
     sr1TrkCuts[trkCutName]['bin'] = [30,0,60]
@@ -151,8 +145,6 @@ for trkCut in sr1TrkDicts:
         sr1TrkCuts[trkCutName]['bin'] = [60,0,60]
     if any([ x in trkCutName for x in  ["_Opp270","_Opp180","_Opp90"]]):
         sr1TrkCuts[trkCutName]['bin'] = [30,0,30]
-
-
     maxNTrk = sr1TrkCuts[trkCutName]['bin'][2]
     sr1TrkCuts[trkCutName]['params']=trkCut
     sr1TrkCuts[trkCutName]['var'] = nTracks(**trkCut)
@@ -179,87 +171,91 @@ trackPlotDict =\
       }
 
 
-plotDict2={}
-for p in trackPlotDict:
-  trackPlotDict[p]['name']=p
-  plotDict2[p]=Plot(**trackPlotDict[p])
-
-trackPlots=Plots(**plotDict2)
+trkPlotsParams=\
+    {
 
 
 
+    }
+
+binDict={
+            "pt":[100,0,100],
+            "eta":[20,-3,3],
+            "pdgId":[500,-250,250],
+            "charge":[3,0,3],
+            "dxy":[50,-0.5,0.5],
+            "dz":[50,-0.5,0.5],
+            "dxyError":[100,0,1],
+             "dzError":[100,0,1],
+             "numberOfPixleHits":[10,0,10],
+             "numberOfHits":[20,0,20],
+             "trackHighPurity":[2,0,2],
+             "mcMatchId": [10,-2,3],
+
+
+
+         }
+
+
+trackQuantPlotDict={}
+for trkCut in trkMultipParams:
+    trkCutName= trkSelName(trkCut,multip=False)
+
+    varList = ["pt","eta","pdgId","charge"]
+    if trkCut['trk']=="Tracks":
+        varList.extend(["dxy","dz","dxyError", "dzError", "numberOfPixleHits", "numberOfHits", "trackHighPurity", "mcMatchId" ]) 
+        
+
+    for var in varList:
+        varName = trkCut['trk']+"_"+var
+        plotName = var+"_"+trkCutName
+        cutString = trackCut(**trkCut)
+        trackQuantPlotDict[plotName]={}
+        trackQuantPlotDict[plotName]['cut']=cutString
+        trackQuantPlotDict[plotName]['var']=varName
+        trackQuantPlotDict[plotName]['name']=plotName
+        trackQuantPlotDict[plotName]['bins']=binDict[var]
+        trackQuantPlotDict[plotName]['decor']={
+                                'title':var+ " " + trkTitle(trkCut),
+                                'x':"Track Multiplicity",
+                                'y':'nEvents',
+                                }
+
+plotDict3={}
+for p in trackQuantPlotDict:
+  #trackPlotDict[p]['name']=p
+  plotDict3[p]=Plot(**trackQuantPlotDict[p])
+
+trackQuantPlots=Plots(**plotDict3)
+
+
+trackMultipPlotDict={}
+for trkCut in trkMultipParams:
+    trkCutName= trkSelName(trkCut)
+
+    trackMultipPlotDict[trkCutName]={}
+    trackMultipPlotDict[trkCutName]['var']=nTracks(**trkCut)
+    trackMultipPlotDict[trkCutName]['name']=trkCutName
+    trackMultipPlotDict[trkCutName]['bins']=[30,0,60]
+    trackMultipPlotDict[trkCutName]['decor']={
+                            'title':trkTitle(trkCut),
+                            'x':"Track Multiplicity",
+                            'y':'nEvents',
+                            }
 
 
 
 
-def getAndDraw(name,var,cut="(1)",bins=[],weight="weight",min=False,logy=0,fom="ratio",fomOpt="All",save=False):
-    bkgHistName="w_%s"%name
-    sigHistName="s_%s"%name
-    ret={}
-    if hasattr(ROOT,bkgHistName) and getattr(ROOT,bkgHistName):
-        hist=getattr(ROOT,"w_%s"%name)
-        #print hist, "already exist, will try to delete it!"
-        #hist.IsA().Destructor(hist)
-        del hist
-    binning = "(%s)"%",".join([str(x) for x in bins]) if bins else ''
-    samples.w.tree.Draw(var+">>hTmp%s"%(binning) ,  "(%s)*(%s)"%(weight,cut), "goff")
-    bkgHist = ROOT.hTmp.Clone(bkgHistName)
-    #bkgHist = getPlotFromChain(samples.w.tree,var,bins,cutString=cut, weight=weight)
-    #bkgHist.SetName(bkgHistName)
-    #bkgHist.SetFillColor(samples.w.tree.GetLineColor())
-    #bkgHist.SetLineColor(1)
-    del ROOT.hTmp
-    bkgHist.SetFillColor(bkgHist.GetLineColor())
-    bkgHist.SetLineColor(1)
-    bkgHist.SetTitle(name)
-    samples.s.tree.Draw(var+">>hTmp2%s"%(binning), "(%s)*(%s)"%(weight,cut), "goff")
-    sigHist = ROOT.hTmp2.Clone(sigHistName)
-    del ROOT.hTmp2
-    if min:
-        bkgHist.SetMinimum(min)
-    ret.update({'sHist':sigHist, 'bkgHist':bkgHist } )
-    if fom:
-        if str(fom).lower() == "ratio": ratio = getRatio(sigHist,bkgHist,normalize=True, min=0.01,max=2.0)
-        else: 
-            ratio=getFOMFromTH1F(sigHist,bkgHist,fom="AMSSYS")
-            x = ratio.GetXaxis()
-            x.SetTitleSize(20)
-            x.SetTitleFont(43)
-            x.SetTitleOffset(4.0)
-            x.SetLabelFont(43)
-            x.SetLabelSize(15)
+#plotDict2={}
+#for p in trackMultipPlotDict:
+#  #trackPlotDict[p]['name']=p
+#  plotDict2[p]=Plot(**trackMultipPlotDict[p])
+#
+#trackMultipPlots=Plots(**plotDict2)
 
-        ratio.SetLineColor(ROOT.kSpring+4)
-        ratio.SetMarkerColor(ROOT.kSpring+4)
-        ratio.SetLineWidth(2)
-        print "getting ratio"
-        #ratio.Print('all')
-        #ratio.Draw()
-        c1,p1,p2 = makeCanvasPads("%s"%name,600,600)
-        p2.cd()
-        Func = ROOT.TF1('Func',"[0]",sigHist.GetBinLowEdge(1),sigHist.GetNbinsX()+1)
-        Func.SetParameter(0,1)
-        Func.SetLineColor(ROOT.kRed)
-        ratio.Draw()        
-        Func.Draw('same')
-        ratio.Draw('same')        
-        ret.update({'ratio':ratio , 'canv': (c1,p1,p2), 'func':Func } )
-    else:
-        p1 = ROOT.TCanvas(name,name,600,600)
-        ret.update({'canv': (p1) } )
-        #bkgHist.Draw("hist")
-        #sigHist.Draw("same")
-    p1.cd()
-    bkgHist.Draw("hist")
-    sigHist.Draw("same")
-    if logy:
-        p1.SetLogy(1)
-    if save:
-        if fom:
-            c1.SaveAs(saveDir+"/%s.png"%name)
-        else:
-            p1.SaveAs(saveDir+"/%s.png"%name)
-    return ret 
+
+
+
 
 
 

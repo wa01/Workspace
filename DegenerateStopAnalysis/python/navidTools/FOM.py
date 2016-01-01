@@ -120,6 +120,7 @@ def getFOMFromTH1FIntegral(sHist,bHist,fom="AMSSYS",sysUnc=0.2):
   nBinX= sHist.GetNbinsX()
   fomHist = sHist.Clone()
   fomHist.Reset()
+  fomHist.GetYaxis().SetTitle(fom)
   for x in range(1,nBinX+1):
     s=sHist.Integral(x,nBinX) 
     b=bHist.Integral(x,nBinX) 

@@ -2,8 +2,8 @@
 import ROOT
 import math
 
+from Workspace.DegenerateStopAnalysis.navidTools.plotTools import *
 
-from plotTools import Dict
 
 class Plot(dict):
   def __init__(self, name, var, bins, decor={},cut=''):

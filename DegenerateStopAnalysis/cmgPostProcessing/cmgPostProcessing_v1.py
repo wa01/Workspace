@@ -114,7 +114,7 @@ def get_parser():
         help="Process tracks for post-processing, bool flag set to True if used"
         )
     
-    argParser.add_argument('--processPkdGenParts',
+    argParser.add_argument('--processGenTracks',
         action='store_true',
         help="Process packed generated particles for post-processing, bool flag set to True if used"
         )
@@ -408,7 +408,7 @@ def eventsSkimPreselect(skimName, leptonSelection, preselectFlag):
 
  
  
-def rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList):
+def rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList, hemiSectorList, nISRsList):
     '''Define the read / write tree classes for data and MC.
     
     '''
@@ -433,7 +433,7 @@ def rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList):
         'nLepGood', 'LepGood_*', 
         'nLepOther', 'LepOther_*', 
         'nTauGood', 'TauGood_*',
-        'track_*', 'isoTrack_*',
+        'Tracks_*', 'isoTrack_*',
         ] 
     
     readVariables_DATAMC = []
@@ -514,21 +514,53 @@ def rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList):
     
     
     if args.processTracks:
-        
+        trkVar="Tracks"
+        trkCountVars = [ "n%s"%trkVar ] 
+        trkCountVars.extend([ 
+                    "n%sOpp%sJet%s"%(trkVar,hemiSec,nISRs) for hemiSec in hemiSectorList  for nISRs in nISRsList     
+                    ])
         newTrackVars = []
         for minTrkPt in trackMinPtList:
             ptString = str(minTrkPt).replace(".","p")
-            newTrackVars.extend( [ x%ptString for x in  [ "ntracks_%s/I" ,"ntrackOppJet1_%s/I" ,"ntrackOppJet12_%s/I" , 
-                                                         "ntrackOppJetAll_%s/I" ] ] )
-        
+            newTrackVars.extend( [ x+"_pt%s"%ptString+"/I" for x in  trkCountVars  ] )
         newVariables_DATAMC.extend(newTrackVars) 
-    
-        readVectors_DATAMC.extend([
-            {'prefix':'track'  , 'nMax':1000, 
-                'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' , 'dxy/F', 'dz/F', 'fromPV/I'] },
-            ])
+        readVectors_DATAMC.append(
+            {'prefix':'Tracks'  , 'nMax':1000, 
+                'vars':[
+                          'pt/F', 'eta/F', 'phi/F', "dxy/F", "dz/F", 'pdgId/I' , 'fromPV/I' , 
+                          "matchedJetIndex/I", "matchedJetDr/F", "CosPhiJet1/F", "CosPhiJet12/F", "CosPhiJetAll/F",
+                          "mcMatchId/I", #"mcMatchIndex/I", "mcMatchPtRatio/F", "mcMatchDr/F"
+                       ]
+            }
+                                  )
         
+    if args.processGenTracks:
+        genTrkVar="GenTracks"
+        genTrkCountVars = [ "n%s"%genTrkVar ] 
+        genTrkCountVars.extend([ 
+                    "n%sOpp%sJet%s"%(genTrkVar,hemiSec,nISRs) for hemiSec in hemiSectorList  for nISRs in nISRsList     
+                    ])
+        newGenTrackVars = []
+        for minGenTrkPt in trackMinPtList:
+            ptString = str(minGenTrkPt).replace(".","p")
+            newGenTrackVars.extend( [ x+"_pt%s"%ptString+"/I" for x in  genTrkCountVars  ] )
+        readVectors_DATAMC.append(
+            {'prefix':genTrkVar  , 'nMax':1000, 
+                'vars':[
+                          'pt/F', 'eta/F', 'phi/F', "dxy/F", "dz/F", 'pdgId/I' , 'fromPV/I' , 
+                          "matchedJetIndex/I", "matchedJetDr/F", "CosPhiJet1/F", "CosPhiJet12/F", "CosPhiJetAll/F",
+                          "mcMatchId/I", "mcMatchIndex/I", "mcMatchPtRatio/F", "mcMatchDr/F"
+                       ]
+            }
+                                  )
     
+        readVectors_MC.extend([
+            {'prefix':'GenJet'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'mass/F' ] },
+            ])
+   
+
+
+ 
     
     # MC samples only
     
@@ -555,20 +587,6 @@ def rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList):
     
     aliases_MC.extend(['genMet:met_genPt', 'genMetPhi:met_genPhi'])
     
-    if args.processPkdGenParts:
-        branchKeepStrings_MC.extend(['genPartPkd_*'])
-        
-        newVariables_MC.extend([
-            'genPartPkd_ISRdPhi/F' , 'genPartPkd_CosISRdPhi/F' ,
-            'ngenPartPkd_1p5/I/0','ngenPartPkd_1/I/0','ngenPartPkd_2/I/0',
-            'ngenPartPkdOppJet1_1/F','ngenPartPkdOppJet1_1p5/F', 'ngenPartPkdOppJet1_2/F',
-            'ngenPartPkdO90isr_1/F', 'ngenPartPkdO90isr_1p5/F', 'ngenPartPkdO90isr_2/F', 
-            ])
-    
-        readVectors_MC.extend([
-            {'prefix':'genPartPkd'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' ] },
-            {'prefix':'GenJet'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'mass/F' ] },
-            ])
         
           
     
@@ -768,15 +786,15 @@ def processLeptons(leptonSelection, readTree, splitTree, saveTree):
     #
     return saveTree, lep
 
-def selectionJets(readTree, ptCut):
+def selectionJets(readTree, ptCut,etaCut=2.4):
     '''Post-processing standard jet selection. 
     
     '''
     
     jetVariables = ['eta', 'pt', 'phi', 'btagCMVA', 'btagCSV', 'id', 'mass']
-    
+
     jets = filter(lambda j:
-        j['pt'] > ptCut and abs(j['eta']) < 2.4 and j['id'], 
+        j['pt'] > ptCut and abs(j['eta']) < etaCut and j['id'], 
         cmgObjectSelection.get_cmg_jets_fromStruct(readTree, jetVariables))
     
     return jets
@@ -798,6 +816,7 @@ def processJets(leptonSelection, readTree, splitTree, saveTree):
         
         # selection of jets
         
+
         ptCut = 30 
         jets = selectionJets(readTree, ptCut)
         logger.debug("\n Selected jets: %i jets \n %s \n", len(jets), pprint.pformat(jets))
@@ -951,50 +970,139 @@ def processLeptonJets(leptonSelection, readTree, splitTree, saveTree, lep, jets)
     return saveTree
 
 
-def processTracksFunction(readTree, splitTree, saveTree, trackMinPtList):
+
+def hemiSectorCosine(x):
+    return round( math.cos(math.pi- 0.5*(x* math.pi/180)),3)
+
+
+def processTracksFunction(readTree, splitTree, saveTree, lep, jets,  trackMinPtList, hemiSectorList, nISRsList):
     '''Process tracks. 
     
     TODO describe here the processing.
     '''
-    
     logger = logging.getLogger('cmgPostProcessing.processTracksFunction')
     
+    jets =  cmgObjectSelection.get_cmg_jets_fromStruct(readTree, ['eta', 'pt', 'phi', 'btagCMVA', 'btagCSV', 'id', 'mass'])  
+    ### corresponding to 90, 135, 150 degree diff between jet and track
+    hemiSectorCosines = {  x:hemiSectorCosine(x) for x in hemiSectorList }   
+    jetPtThreshold = 30
     varList = [
         'pt', 'eta', 'phi', "dxy", "dz", 'pdgId' ,
         "matchedJetIndex", "matchedJetDr",
         "CosPhiJet1", "CosPhiJet12", "CosPhiJetAll"
         ]
-    tracks = (hephyHelpers.getObjDict(splitTree, 'track_', varList, i) for i in range(readTree.ntrack))
-    
-    ntrack = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOppJet1 = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOppJet12 = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOppJetAll = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOpp90Jet1 = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOpp90Jet12 = { minPt : 0 for minPt in trackMinPtList}
-    ntrackOpp90JetAll = { minPt : 0 for minPt in trackMinPtList}
+
+    trkVar="Tracks"
+    nTracks = getattr(readTree,"n%s"%trkVar)
+    tracks = (hephyHelpers.getObjDict(splitTree, trkVar+"_", varList, i) for i in range(nTracks))
+    nTrkDict = {
+                 "nTracks": { minPt : 0 for minPt in trackMinPtList}
+               }
+
+    nTrkDict.update({
+                "nTracksOpp%sJet%s"%(hemiSec,nISRs) : { minPt : 0 for minPt in trackMinPtList} 
+                                         for nISRs in nISRsList for hemiSec in hemiSectorList          
+                })
+
     
     for track in tracks:
         if not (
-            abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.02 and 
-            abs(track['dz']) < 0.5 and track['pt'] >= 1.0
-            ) :
+                abs(track['eta']) < 2.5 and track['pt']>=1.0 and
+                abs(track['dxy']) < 0.1 and abs( track['dz'] ) < 0.1 
+                ) :
             continue
-        if not (
-            track["matchedJetIndex"] == -1  and track['matchedJetDr'] > 0.4  
-            ):
-            # # also check jet pt  ## vetoing tracks that are matched to a jet 
-            continue
+        if abs(track['pdgId']) in [13,11]:
+            #if len(selectedLeptons)>0 and hephyHelpers.deltaR(track, selectedLeptons[0] ) <0.1:
+            if lep and hephyHelpers.deltaR(track, lep) <0.1 and lep['pdgId']==track['pdgId'] :
+                #Possible lepton track... shouldn't count the lepton that's being used, let's check Pt first ", deltaR(track, lep)
+                if lep['pt']/track['pt'] < 1.1 and lep['pt']/track['pt'] > 0.9:
+                    #print "   yes most definitely is!"
+                    continue
+        if  (track['matchedJetDr']<=0.4  ): 
+            # Possible ISR track, will not count track if the jet pt greater than jetPtThreshold
+            #matchedJet = allJets[int(track['matchedJetIndex'])]
+            matchedJet = jets[int(track['matchedJetIndex'])]
+            if matchedJet['pt'] > jetPtThreshold:
+                # Track is matched with dr<0.4 to a jet with pt higher than jetpthtreshold. Dont want to count such a track!
+                continue
         for minTrkPt in trackMinPtList:
             if track['pt'] > minTrkPt:
-                ntrack[minTrkPt] += 1
-                if track['CosPhiJet1'] < 0:
-                    ntrackOppJet1[minTrkPt] += 1
-                if track['CosPhiJet12'] < 0:
-                    ntrackOppJet12[minTrkPt] += 1
-                if track['CosPhiJetAll'] < 0:
-                    ntrackOppJetAll[minTrkPt] += 1    
-            logger.trace("\n Track: \n %s \n", pprint.pformat(track))
+                nTrkDict['nTracks'][minTrkPt] +=1
+                ## tracks in the opp sectors
+                for hemiSector in hemiSectorList:
+                    for nISRs in nISRsList:
+                        nTrkVarName = "nTracksOpp%sJet%s"%(hemiSector,nISRs)
+                        print "trk cosine", track['CosPhiJet%s'%nISRs ], hemiSectorCosines[hemiSector]
+                        if track['CosPhiJet%s'%nISRs ] < hemiSectorCosines[hemiSector]:
+                            print "  yes" 
+                            nTrkDict[nTrkVarName][minTrkPt]+=1
+    for minTrkPt in trackMinPtList:
+        ptString = str(minTrkPt).replace(".","p")
+        setattr(saveTree, "n"+trkVar+"_pt%s"%ptString , nTrkDict["n"+trkVar][minTrkPt] )
+        for hemiSector in hemiSectorList:
+            for nISRs in nISRsList:
+                nTrkVarName = "nTracksOpp%sJet%s"%(hemiSector,nISRs)
+                setattr(saveTree,nTrkVarName+"_pt%s"%ptString, nTrkDict[nTrkVarName][minTrkPt] )
+
+    print(nTrkDict)
+    for hemiSector in hemiSectorList:
+        for nISRs in nISRsList:
+            nTrkVarName = "nTracksOpp%sJet%s"%(hemiSector,nISRs)
+            print nTrkVarName, { trkPt: getattr(saveTree,nTrkVarName+"_pt%s"%str(trkPt).replace(".","p") ) for trkPt in trackMinPtList }
+
+    return saveTree 
+
+
+
+                        #if track['CosPhiJet12'] < 0:
+                        #    ntrackOppJet12[minTrkPt]+=1
+                        #if track['CosPhiJetAll'] < 0:
+                        #    ntrackOppJetAll[minTrkPt]+=1
+                        ### tracks in half a hemis (Opp cone size = 90deg )
+                        ### math.cos(2.35619)= -0.7071
+                        #cos135 = -0.7071
+                        #if track['CosPhiJet1'] < cos135:
+                        #    ntrackOpp90Jet1[minTrkPt]+=1
+                        #if track['CosPhiJet12'] < cos135:
+                        #    ntrackOpp90Jet12[minTrkPt]+=1
+                        #if track['CosPhiJetAll'] < cos135:
+                        #    ntrackOpp90JetAll[minTrkPt]+=1
+                        ### tracks in quart. a hemis (Opp cone size = 60deg )
+                        ### math.cos(2.6179)= -0.8659
+                        #cos150 = -0.8659
+                        #if track['CosPhiJet1'] < cos150:
+                        #    ntrackOpp60Jet1[minTrkPt]+=1
+                        #if track['CosPhiJet12'] < cos150:
+                        #    ntrackOpp60Jet12[minTrkPt]+=1
+                        #if track['CosPhiJetAll'] < cos150:
+                        #    ntrackOpp60JetAll[minTrkPt]+=1
+
+
+
+
+
+    ############333
+    #for track in tracks:
+    #    if not (
+    #        abs(track['eta']) < 2.5 and abs(track['dxy']) < 0.1 and 
+    #        abs(track['dz']) < 0.1 and track['pt'] >= 1.0
+    #        ) :
+    #        continue
+    #    if not (
+    #        track["matchedJetIndex"] == -1  and track['matchedJetDr'] > 0.4  
+    #        ):
+    #        # # also check jet pt  ## vetoing tracks that are matched to a jet 
+    #        continue
+    #    for minTrkPt in trackMinPtList:
+    #        if track['pt'] > minTrkPt:
+    #            ntrack[minTrkPt] += 1
+    #            if track['CosPhiJet1'] < 0:
+    #                ntrackOppJet1[minTrkPt] += 1
+    #            if track['CosPhiJet12'] < 0:
+    #                ntrackOppJet12[minTrkPt] += 1
+    #            if track['CosPhiJetAll'] < 0:
+    #                ntrackOppJetAll[minTrkPt] += 1    
+    #        logger.trace("\n Track: \n %s \n", pprint.pformat(track))
     
 #         if cos(track['phi'] - saveTree.jet1Phi) < 0:
 #             for trackMinPt in trackMinPtList:
@@ -1011,25 +1119,24 @@ def processTracksFunction(readTree, splitTree, saveTree, trackMinPtList):
 #                 logger.debug("\n added one track to %f \n %f", trackMinPt, ntracks[trackMinPt])
 #                 FIXME check the message above if correct, when un-commening 
           
-    for minTrkPt in trackMinPtList:
-        trkPtString = str(minTrkPt).replace(".", "p")
-        setattr(saveTree, "ntracks_%s" % trkPtString        , ntrack[minTrkPt])
-        setattr(saveTree, "ntrackOppJet1_%s" % trkPtString  , ntrackOppJet1[minTrkPt])
-        setattr(saveTree, "ntrackOppJet12_%s" % trkPtString , ntrackOppJet12[minTrkPt])  
-        setattr(saveTree, "ntrackOppJetAll_%s" % trkPtString, ntrackOppJetAll[minTrkPt])
-    
+    #for minTrkPt in trackMinPtList:
+    #    trkPtString = str(minTrkPt).replace(".", "p")
+    #    setattr(saveTree, "ntracks_%s" % trkPtString        , ntrack[minTrkPt])
+    #    setattr(saveTree, "ntrackOppJet1_%s" % trkPtString  , ntrackOppJet1[minTrkPt])
+    #    setattr(saveTree, "ntrackOppJet12_%s" % trkPtString , ntrackOppJet12[minTrkPt])  
+    #    setattr(saveTree, "ntrackOppJetAll_%s" % trkPtString, ntrackOppJetAll[minTrkPt])
     #
-    return saveTree
+    #
  
 
   
-def processPkdGenPartsFunction(readTree, splitTree, saveTree):
+def processGenTracksFunction(readTree, splitTree, saveTree):
     '''Process generated particles. 
     
     TODO describe here the processing.
     '''
     
-    logger = logging.getLogger('cmgPostProcessing.processPkdGenPartsFunction')
+    logger = logging.getLogger('cmgPostProcessing.processGenTracksFunction')
     
     # 
     genPartMinPtList = [1,1.5,2]
@@ -1275,10 +1382,17 @@ def cmgPostProcessing(argv=None):
     logger.info("\n Target luminosity: %f pb^{-1} \n", target_lumi)
     
     if args.processTracks:
-        trackMinPtList= [1,1.5,2,2.5,3]
+        trackMinPtList= [1,1.5,2,2.5,3,3.5]
+        hemiSectorList    =   [ 180, 90, 60 ]
+        nISRsList = ['1','12','All']
+
         logger.info("\n trackMinPtList: %s \n", pprint.pformat(trackMinPtList))
+        logger.info("\n hemiSectorList: %s \n", pprint.pformat(hemiSectorList))
+        logger.info("\n nISRsList: %s \n", pprint.pformat(nISRsList))
     else:
         trackMinPtList = []
+        hemiSectorList = []
+        nISRsList =[]
 
     # skim condition 
     skimCond =  eventsSkimPreselect(skim, leptonSelection, preselect)
@@ -1347,7 +1461,7 @@ def cmgPostProcessing(argv=None):
         logger.debug("\n Temporary directory \n  %s \n" , temporaryDir) 
         
         branchKeepStrings, readVars, aliases, readVectors, newVars, readTree, saveTree = \
-            rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList)
+            rwTreeClasses(sample, isample, args, temporaryDir, trackMinPtList, hemiSectorList, nISRsList)
                    
         filesForHadd=[]
 
@@ -1424,10 +1538,10 @@ def cmgPostProcessing(argv=None):
                     saveTree = processLeptonJets(leptonSelection, readTree, splitTree, saveTree, lep, jets)
 
                     if args.processTracks:
-                        saveTree = processTracksFunction(readTree, splitTree, saveTree, trackMinPtList)
+                        saveTree = processTracksFunction(readTree, splitTree, saveTree, lep, jets, trackMinPtList, hemiSectorList, nISRsList)
 
-                    if args.processPkdGenParts:
-                        saveTree = processPkdGenPartsFunction(readTree, splitTree, saveTree)
+                    if args.processGenTracks:
+                        saveTree = processGenTracksFunction(readTree, splitTree, saveTree)
                     
                     # process various tranverse masses and other variables
                     saveTree = processMasses(readTree, saveTree)

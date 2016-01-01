@@ -1,5 +1,5 @@
 import math
-from Workspace.DegenerateStopAnalysis.navidTools.CutTools import *
+from Workspace.DegenerateStopAnalysis.navidTools.NavidTools import CutClass, joinCutStrings
 
 
 ## --------------------------------------------------------------
@@ -21,9 +21,10 @@ minAngle = lambda phi1, phi2 : "TMath::Min( (2*pi) - abs({phi1}-{phi2}) , abs({p
 presel = CutClass ("presel", [
                               ["MET200","met>200"],
                               ["ISR110","nJet110>=1" ],
-                              ["HT300","htJet30j>300"],
+                              #["HT300","htJet30j>300"],
+                              ["HT200","htJet30j>200"],
                               #["2ndJetPt60","nJet60<=2 "],
-                              ["AntiQCD", "deltaPhi_j12 < 2.5" ],
+                              #["AntiQCD", "deltaPhi_j12 < 2.5" ],  monojet
                               ["singleLep",    "nlep==1"  ],
                             ] ,
                 baseCut=None,
@@ -48,8 +49,8 @@ sr1   = CutClass ("sr1",    [
 sr1Loose   = CutClass ("sr1Loose",    [
                               ["MuPt30","lepPt<30"],
                               ["negMuon","lepPdgId==13"],
-                              ["MuEta1.5","abs(lepEta)<1.5"],
-                              ["BVeto","(nSoftBJetsCSV == 0 && nHardBJetsCSV ==0)"],
+                              ["MuEta2.4","abs(lepEta)<2.4"],
+                              #["BVeto","(nSoftBJetsCSV == 0 && nHardBJetsCSV ==0)"],
                               #["met300","met>300"],
                               #["HT400","htJet30j>400"],
                            ] , 

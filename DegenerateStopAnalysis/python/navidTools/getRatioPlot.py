@@ -36,19 +36,33 @@ def getRatio(hist1, hist2,normalize=False,min=False,max=False):
   return ret
 
 
-def makeCanvasPads(c1name="canvas",c1ww=600,c1wh=600):
-  c = ROOT.TCanvas(c1name,c1name,c1ww,c1wh)
+
+
+
+def makeCanvasPads(     c1Name="canvas",  c1ww=600, c1wh=600, 
+                       p1Name="pad1", p1M=[0, 0.3, 1, 1.0], p1Gridx=False, p1Gridy=False, 
+                       p2Name="pad2", p2M=[0, 0.05, 1, 0.3], p2Gridx=False, p2Gridy=False,
+                       joinPads=True,
+                       func=None
+                    ):
+  c = ROOT.TCanvas(c1Name,c1Name,c1ww,c1wh)
   # Upper histogram plot is pad1
-  pad1 = ROOT.TPad("pad1", "pad1", 0, 0.3, 1, 1.0)
+  pad1 = ROOT.TPad(p1Name, p1Name, *p1M)
   pad1.SetBottomMargin(0)  # joins upper and lower plot
-  pad1.SetGridx()
-  pad1.Draw()
+  if p1Gridx: pad1.SetGridx()
+  if p1Gridy: pad1.SetGridy()
+  
   # Lower ratio plot is pad2
   c.cd()  # returns to main canvas before defining pad2
-  pad2 = ROOT.TPad("pad2", "pad2", 0, 0.05, 1, 0.3)
-  pad2.SetTopMargin(0)  # joins upper and lower plot
+  pad2 = ROOT.TPad(p2Name, p2Name, *p2M)
+
+  if joinPads: pad2.SetTopMargin(0)  # joins upper and lower plot
   pad2.SetBottomMargin(0.2)
-  pad2.SetGridx()
+  if p2Gridx: pad2.SetGridx()
+  if p2Gridy: pad2.SetGridy()
+  if func:
+    func(pad1,pad2)
+  pad1.Draw()
   pad2.Draw()
   return c, pad1, pad2
 

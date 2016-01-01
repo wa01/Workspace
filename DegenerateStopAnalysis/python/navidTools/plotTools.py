@@ -7,6 +7,10 @@ import pickle
 
 from Workspace.HEPHYPythonTools.helpers import getChain, getPlotFromChain, getYieldFromChain, getChunks
 from Workspace.DegenerateStopAnalysis.navidTools.CutTools import *
+from Workspace.DegenerateStopAnalysis.navidTools.getRatioPlot import *
+from Workspace.DegenerateStopAnalysis.navidTools.FOM import *
+
+
 
 
 def saveCanvas(canv,name,plotDir="./",format=".gif"):
@@ -202,12 +206,12 @@ def getBkgSigStacks(sampleDict, plotDict, varList='',treeList=''):
   bkgStackDict={}
   sigStackDict={}
   for v in varList:
-    if len(plotDict[v]['bin'])!=6:
+    if len(plotDict[v]['bins'])!=6:
       bkgStackDict[v]=getStackFromHists([ sampleDict[t]['plots'][v] for t in treeList if not sampleDict[t]['isSignal']])
       sigStackDict[v]=getStackFromHists([ sampleDict[t]['plots'][v] for t in treeList if sampleDict[t]['isSignal']])
   return (bkgStackDict,sigStackDict)
 
-def drawPlots(sampleDict,plotDict,varList='',treeList='',plotDir='',dOpt=""):
+def drawPlots_old(sampleDict,plotDict,varList='',treeList='',plotDir='',dOpt=""):
   treeList  = matchListToDictKeys(treeList,sampleDict)
   varList   = matchListToDictKeys(varList,plotDict)
 
@@ -482,4 +486,288 @@ def drawPlots(samples,plots):
       drawOpt="same"
   return canv
 
-           
+          
+
+def drawPlot(samples,sampleList=['s','w'],plot='',min=False,logy=0,save=True,fom=True):
+    canv = ROOT.TCanvas(plot,plot,600,600)
+    if logy: canv.SetLogy(1)
+    sigHist = getattr(samples.s.cuts.sr1Loose,plot)
+    bkgHist = getattr(samples.w.cuts.sr1Loose,plot)
+    bkgHist.Draw("hist")
+    if min: bkgHist.SetMinimum(min)
+    sigHist.Draw("same")
+    canv.SetLogy(1)
+    if save:
+        canv.SaveAs(saveDir+"/%s.png"%plot)
+    if fom:
+        fomHist=getFOMFromTH1F(sigHist,bkgHist)
+        fomCanv=ROOT.TCanvas("FOM_%s"%plot,"FOM_%s"%plot ,600,200)
+        fomHist.Draw()
+    return canv, fomHist, fomCanv
+
+
+
+
+
+
+def getAndDraw_old(samples,name,var,cut="(1)",bins=[],weight="weight",sampleList=['w'],min=False,logy=0,fom="AMSSYS",fomOpt=True,save=False):
+    binning = "(%s)"%",".join([str(x) for x in bins]) if bins else ''
+    ret={}
+
+    #bkgList=['tt','w']
+    bkgList=sampleList
+    bkgHists={}
+    for bkg in bkgList:
+        bkgHists[bkg]={}
+        bkgHistName= bkg+"_"+name
+        bkgHists[bkg]['name']=bkgHistName
+        bkgTree=samples[bkg].tree
+        if hasattr(ROOT,bkgHistName) and getattr(ROOT,bkgHistName):
+            hist=getattr(ROOT,bkgHistName)
+            #print hist, "already exist, will try to delete it!"
+            #hist.IsA().Destructor(hist)
+            del hist
+        bkgTree.Draw(var+">>hTmp%s"%(binning) ,  "(%s)*(%s)"%(weight,cut), "goff")
+        bkgHists[bkg]['hist'] = ROOT.hTmp.Clone(bkgHistName)
+        del ROOT.hTmp
+        bkgHists[bkg]['hist'].SetFillColor(bkgHists[bkg]['hist'].GetLineColor())
+        bkgHists[bkg]['hist'].SetLineColor(1)
+        bkgHists[bkg]['hist'].SetTitle(name)
+    bkgStack = getStackFromHists( [bkgHists[bkg]['hist'] for bkg in bkgList] )
+    bkgStack.SetTitle(name)
+
+    
+    sigHistName="s_%s"%name
+    samples.s.tree.Draw(var+">>hTmp2%s"%(binning), "(%s)*(%s)"%(weight,cut), "goff")
+    sigHist = ROOT.hTmp2.Clone(sigHistName)
+    del ROOT.hTmp2
+
+    nBins  = sigHist.GetNbinsX()
+    lowBin = sigHist.GetBinLowEdge(1)
+    hiBin  = sigHist.GetBinLowEdge(sigHist.GetNbinsX()+1)
+
+    stackHist=ROOT.TH1F("stack_hist","stack_hist",nBins,lowBin,hiBin)
+    stackHist.Merge(bkgStack.GetHists())
+
+    if min:
+        bkgStack.SetMinimum(min)
+    ret.update({'sHist':sigHist, 'bkgHists':bkgHists, "bkgStack":bkgStack, "stackHist":stackHist } )
+
+    if fom:
+        c1,p1,p2 = makeCanvasPads("%s"%name,600,600)
+        p2.cd()
+
+
+        if str(fom)  == "ratio": 
+            ratio = getRatio(sigHist,stackHist,normalize=True, min=0.01,max=2.0)
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'] = getRatio(sigHist, bkgHists[bkg]['hist'] ,normalize=True, min=0.01,max=2.0)
+                bkgHists[bkg]['ratio'].SetName("%s_%s"%(bkg,fom))
+        else:
+            ratio=getFOMFromTH1FIntegral(sigHist,stackHist,fom=fom)
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'] = getFOMFromTH1FIntegral(sigHist, bkgHists[bkg]['hist'], fom=fom )
+                bkgHists[bkg]['ratio'].SetName("%s_%s"%(bkg,fom))
+        dOpt=''
+        if not fomOpt:
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'].SetLineColor( bkgHists[bkg]['hist'].GetFillColor() )
+                bkgHists[bkg]['ratio'].SetLineWidth(2)
+
+                if not dOpt:
+                    firstHist = bkgHists[bkg]['ratio']
+                bkgHists[bkg]['ratio'].Draw(dOpt)
+                dOpt="same"
+        else:
+            firstHist = ratio
+            ratio.SetTitle(name)
+            ratio.Draw(dOpt)
+
+        firstHist.SetStats(0)
+        x = firstHist.GetXaxis()
+        x.SetTitleSize(20)
+        x.SetTitleFont(43)
+        x.SetTitleOffset(4.0)
+        x.SetLabelFont(43)
+        x.SetLabelSize(15)
+        y = firstHist.GetYaxis()
+        y.SetTitle(fom)
+        y.SetNdivisions(505)
+        y.SetTitleSize(20)
+        y.SetTitleFont(43)
+        y.SetTitleOffset(1)
+        y.SetLabelFont(43)
+        y.SetLabelSize(15)
+               
+ 
+        ratio.SetLineColor(ROOT.kSpring+4)
+        ratio.SetMarkerColor(ROOT.kSpring+4)
+        ratio.SetLineWidth(2)
+        if "ratio" in fom.lower():
+          ratio.SetMinimum(0)
+          ratio.SetMaximum(2)
+        else:
+          ratio.SetMinimum(0.5)
+          ratio.SetMaximum(2)
+        print "getting ratio"
+        Func = ROOT.TF1('Func',"[0]",sigHist.GetBinLowEdge(1),sigHist.GetBinLowEdge( sigHist.GetNbinsX()+1) )
+        Func.SetParameter(0,1)
+        Func.SetLineColor(ROOT.kRed)
+        Func.Draw('same')
+        c1.Update()
+        p1.Update()
+        ret.update({'ratio':ratio, 'canv': (c1,p1,p2), 'func':Func } )
+    else:
+        p1 = ROOT.TCanvas(name,name,600,600)
+        ret.update({'canv': (p1) } )
+        #bkgHist.Draw("hist")
+        #sigHist.Draw("same")
+    p1.cd()
+
+    bkgStack.Draw("hist")
+    bkgStack.GetYaxis().SetTitle("nEvents")
+    sigHist.Draw("same")
+    if logy:
+        p1.SetLogy(1)
+    if save:
+        if fom:
+            c1.SaveAs(save+"/%s.png"%name)
+        else:
+            p1.SaveAs(save+"/%s.png"%name)
+    return ret 
+
+
+
+
+
+
+
+def getAndDraw(samples, plots, cutInst, weight="weight", sampleList=['w'], min=False,logy=0,fom="AMSSYS",fomOpt=True,save=False):
+
+
+    bkgList=sampleList
+    bkgHists={}
+    for bkg in bkgList:
+        bkgHists[bkg]={}
+        bkgHistName= bkg+"_"+name
+        bkgHists[bkg]['name']=bkgHistName
+        bkgTree=samples[bkg].tree
+        if hasattr(ROOT,bkgHistName) and getattr(ROOT,bkgHistName):
+            hist=getattr(ROOT,bkgHistName)
+            #print hist, "already exist, will try to delete it!"
+            #hist.IsA().Destructor(hist)
+            del hist
+        bkgTree.Draw(var+">>hTmp%s"%(binning) ,  "(%s)*(%s)"%(weight,cut), "goff")
+        bkgHists[bkg]['hist'] = ROOT.hTmp.Clone(bkgHistName)
+        del ROOT.hTmp
+        bkgHists[bkg]['hist'].SetFillColor(bkgHists[bkg]['hist'].GetLineColor())
+        bkgHists[bkg]['hist'].SetLineColor(1)
+        bkgHists[bkg]['hist'].SetTitle(name)
+    bkgStack = getStackFromHists( [bkgHists[bkg]['hist'] for bkg in bkgList] )
+    bkgStack.SetTitle(name)
+
+    
+    sigHistName="s_%s"%name
+    samples.s.tree.Draw(var+">>hTmp2%s"%(binning), "(%s)*(%s)"%(weight,cut), "goff")
+    sigHist = ROOT.hTmp2.Clone(sigHistName)
+    del ROOT.hTmp2
+
+    nBins  = sigHist.GetNbinsX()
+    lowBin = sigHist.GetBinLowEdge(1)
+    hiBin  = sigHist.GetBinLowEdge(sigHist.GetNbinsX()+1)
+
+    stackHist=ROOT.TH1F("stack_hist","stack_hist",nBins,lowBin,hiBin)
+    stackHist.Merge(bkgStack.GetHists())
+
+    if min:
+        bkgStack.SetMinimum(min)
+    ret.update({'sHist':sigHist, 'bkgHists':bkgHists, "bkgStack":bkgStack, "stackHist":stackHist } )
+
+    if fom:
+        c1,p1,p2 = makeCanvasPads("%s"%name,600,600)
+        p2.cd()
+
+
+        if str(fom)  == "ratio": 
+            ratio = getRatio(sigHist,stackHist,normalize=True, min=0.01,max=2.0)
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'] = getRatio(sigHist, bkgHists[bkg]['hist'] ,normalize=True, min=0.01,max=2.0)
+                bkgHists[bkg]['ratio'].SetName("%s_%s"%(bkg,fom))
+        else:
+            ratio=getFOMFromTH1FIntegral(sigHist,stackHist,fom=fom)
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'] = getFOMFromTH1FIntegral(sigHist, bkgHists[bkg]['hist'], fom=fom )
+                bkgHists[bkg]['ratio'].SetName("%s_%s"%(bkg,fom))
+        dOpt=''
+        if not fomOpt:
+            for bkg in bkgList:
+                bkgHists[bkg]['ratio'].SetLineColor( bkgHists[bkg]['hist'].GetFillColor() )
+                bkgHists[bkg]['ratio'].SetLineWidth(2)
+
+                if not dOpt:
+                    firstHist = bkgHists[bkg]['ratio']
+                bkgHists[bkg]['ratio'].Draw(dOpt)
+                dOpt="same"
+        else:
+            firstHist = ratio
+            ratio.SetTitle(name)
+            ratio.Draw(dOpt)
+
+        firstHist.SetStats(0)
+        x = firstHist.GetXaxis()
+        x.SetTitleSize(20)
+        x.SetTitleFont(43)
+        x.SetTitleOffset(4.0)
+        x.SetLabelFont(43)
+        x.SetLabelSize(15)
+        y = firstHist.GetYaxis()
+        y.SetTitle(fom)
+        y.SetNdivisions(505)
+        y.SetTitleSize(20)
+        y.SetTitleFont(43)
+        y.SetTitleOffset(1)
+        y.SetLabelFont(43)
+        y.SetLabelSize(15)
+               
+ 
+        ratio.SetLineColor(ROOT.kSpring+4)
+        ratio.SetMarkerColor(ROOT.kSpring+4)
+        ratio.SetLineWidth(2)
+        if "ratio" in fom.lower():
+          ratio.SetMinimum(0)
+          ratio.SetMaximum(2)
+        else:
+          ratio.SetMinimum(0.5)
+          ratio.SetMaximum(2)
+        print "getting ratio"
+        Func = ROOT.TF1('Func',"[0]",sigHist.GetBinLowEdge(1),sigHist.GetBinLowEdge( sigHist.GetNbinsX()+1) )
+        Func.SetParameter(0,1)
+        Func.SetLineColor(ROOT.kRed)
+        Func.Draw('same')
+        c1.Update()
+        p1.Update()
+        ret.update({'ratio':ratio, 'canv': (c1,p1,p2), 'func':Func } )
+    else:
+        p1 = ROOT.TCanvas(name,name,600,600)
+        ret.update({'canv': (p1) } )
+        #bkgHist.Draw("hist")
+        #sigHist.Draw("same")
+    p1.cd()
+
+    bkgStack.Draw("hist")
+    bkgStack.GetYaxis().SetTitle("nEvents")
+    sigHist.Draw("same")
+    if logy:
+        p1.SetLogy(1)
+    if save:
+        if fom:
+            c1.SaveAs(save+"/%s.png"%name)
+        else:
+            p1.SaveAs(save+"/%s.png"%name)
+    return ret 
+
+
+
+
+
+

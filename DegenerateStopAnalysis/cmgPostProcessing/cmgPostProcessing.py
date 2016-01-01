@@ -24,13 +24,14 @@ from Workspace.DegenerateStopAnalysis.cmgTuples_Spring15_7412pass2 import *
 
 target_lumi = 10000 #pb-1
 lepton_soft_hard_cut  = 30
-tracks = True
-pkdGenParts = False
+tracksOpt = False
+pkdGenPartsOpt = False
 verbose = False
 break_for_debug = False
 defSampleStr = "T2DegStop_300_270"
 #subDir = "postProcessed_7412pass2_v2"
-subDir = "postProcessed_7412pass2_LIPSYNC_v0"
+#subDir = "postProcessed_7412pass2_Preselection_v0"
+subDir = "postProcessed_7412pass2_LIPSync_v1"
 
 
 ROOT.gSystem.Load("libFWCoreFWLite.so")
@@ -68,7 +69,7 @@ branchKeepStrings_DATAMC = ["run", "lumi", "evt", "isData", "rho", "nVert",
                      "nTauGood", "TauGood_*",
                      "Tracks_*", "isoTrack_*","GenTracks_*",
                      ] 
-if tracks:
+if tracksOpt:
     #branchKeepStrings_DATAMC.extend(["track_*","isoTrack_*"])
     trackMinPtList= [1,1.5,2,2.5,3]
     trackJetPtList = [30,40,50,60,90]
@@ -84,7 +85,7 @@ branchKeepStrings_MC = [ "nTrueInt", "genWeight", "xsec", "puWeight",
                      "GenJet_*",
                       ]
 
-if pkdGenParts:
+ if pkdGenPartsOpt:
   branchKeepStrings_MC.extend(["genPartPkd_*"])
   genPartMinPtList= [1,1.5,2]
 
@@ -134,11 +135,12 @@ if options.skim=='inc':
   skimCond = "(1)"
 if options.preselect:
   #preselection = "(met_pt > 200 && Jet_pt[0]> 100 && Sum$(Jet_pt)>200 )"
-  metCut = "(met_pt>100)"
-  leadingJet110 = "((Max$(Jet_pt*(abs(Jet_eta)<2.4 && Jet_id) ) >100) >=1)"
-  HTCut    = "(Sum$(Jet_pt*(Jet_pt>30 && abs(Jet_eta)<2.4 && (Jet_id)))>300)"
+  metCut = "(met_pt>200)"
+  leadingJet100 = "((Max$(Jet_pt*(abs(Jet_eta)<2.4 && Jet_id) ) > 100 ) >=1)"
+  HTCut    = "(Sum$(Jet_pt*(Jet_pt>30 && abs(Jet_eta)<2.4 && (Jet_id)) ) >300)"
+  
   #SRLOOSE  = "Sum$( LepGood_pt < 50)"
-  preselection = "(%s)"%'&&'.join([metCut,leadingJet110,HTCut])
+  preselection = "(%s)"%'&&'.join([metCut,leadingJet100,HTCut])
 
   print "Applying Preselection", preselection
   skimCond += "&&%s"%preselection
@@ -231,14 +233,14 @@ for isample, sample in enumerate(allSamples):
     {'prefix':'LepGood',  'nMax':8, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I', 'relIso03/F', 'tightId/I', 'miniRelIso/F','mass/F','sip3d/F','mediumMuonId/I', 'mvaIdPhys14/F','lostHits/I', 'convVeto/I']},
     {'prefix':'Jet',  'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'id/I','btagCSV/F', 'btagCMVA/F', 'mass/F']},
   ]
-  if tracks: 
+  if tracksOpt: 
     readVectors.extend([ 
             {'prefix':'Tracks'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' , 'dxy/F', 'dz/F', 'fromPV/I'] },
             {'prefix':'GenTracks'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' ] },
             {'prefix':'GenJet'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'mass/F' ] },
             {'prefix':'GenPart'  , 'nMax':100, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/F' ] },
                      ] )
-  if pkdGenParts: 
+   if pkdGenPartsOpt: 
     readVectors.extend([
             {'prefix':'genPartPkd'  , 'nMax':1000, 'vars':['pt/F', 'eta/F', 'phi/F', 'pdgId/I' ] },
 
@@ -248,7 +250,7 @@ for isample, sample in enumerate(allSamples):
     newVariables = ['weight/F']
     aliases.extend(['genMet:met_genPt', 'genMetPhi:met_genPhi'])
     #readVectors[1]['vars'].extend('partonId/I')
-    if pkdGenParts:
+     if pkdGenPartsOpt:
       newVariables.extend([
                            'genPartPkd_ISRdPhi/F' , 'genPartPkd_CosISRdPhi/F' ,"ngenPartPkd_1p5/I/0","ngenPartPkd_1/I/0","ngenPartPkd_2/I/0",
                            'ngenPartPkdOppJet1_1/F','ngenPartPkdOppJet1_1p5/F', 'ngenPartPkdOppJet1_2/F','ngenPartPkdO90isr_1/F', 'ngenPartPkdO90isr_1p5/F', 'ngenPartPkdO90isr_2/F', 
@@ -267,7 +269,7 @@ for isample, sample in enumerate(allSamples):
 
                           ]) #, 'mt2w/F'] )
 
-    if tracks:
+    if tracksOpt:
       newTrackVars = []
       for minTrkPt in trackMinPtList:
         ptString = str(minTrkPt).replace(".","p")
@@ -584,7 +586,7 @@ for isample, sample in enumerate(allSamples):
             s.deltaPhi_j12 = min( 2*pi- abs(jets60[1]['phi'] - jets60[0]['phi'] ) ,  abs(jets60[1]['phi'] - jets60[0]['phi'] ) )
 
         ###############################       track variables
-        if tracks:
+        if tracksOpt:
           ###############################     RECO Tracks
           trackVar="Tracks"
           vars = ['pt', 'eta', 'phi', "dxy", "dz", 'pdgId' , "matchedJetIndex", "matchedJetDr", "CosPhiJet1", "CosPhiJet12", "CosPhiJetAll"]
@@ -758,7 +760,7 @@ for isample, sample in enumerate(allSamples):
             setattr(s,"nGenTrackOpp60JetAll_%s"%trkPtString,  nGenTrackOpp60JetAll[minTrkPt]   )
 
 
-        if pkdGenParts:
+         if pkdGenPartsOpt:
           vars = ['pt', 'eta', 'phi', 'pdgId' ]
           genPartPkds =   (getObjDict(t, 'genPartPkd_',vars, i ) for i in range(r.ngenPartPkd))
           ngenPartPkds={ minPt : 0 for minPt in genPartMinPtList}

@@ -5,6 +5,7 @@ import PhysicsTools.HeppyCore.framework.config as cfg
 from Workspace.HEPHYPythonTools.xsec import xsec
 
 data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
+data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v3/RunIISpring15MiniAODv2/"
 
 
 TTJets_LO = {\
