@@ -5,6 +5,7 @@ import math
 from Workspace.DegenerateStopAnalysis.navidTools.plotTools import *
 
 
+
 class Plot(dict):
   def __init__(self, name, var, bins, decor={},cut=''):
     super(Plot, self).__init__( name=name, var=var, bins=bins,decor=decor,cut='')

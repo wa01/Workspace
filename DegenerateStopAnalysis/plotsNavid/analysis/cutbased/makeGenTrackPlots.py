@@ -1,11 +1,4 @@
-#from Workspace.DegenerateStopAnalysis.navidTools.PlotDict import *
-#from Workspace.DegenerateStopAnalysis.navidTools.Yields import *
-#from Workspace.DegenerateStopAnalysis.navidTools.CutTools import *
-#from Workspace.DegenerateStopAnalysis.navidTools.plotTools import *
 from Workspace.DegenerateStopAnalysis.cuts import *
-#from Workspace.DegenerateStopAnalysis.navidTools.FOM import *
-#from Workspace.DegenerateStopAnalysis.navidTools.getSamples_PP_Spring15 import *
-
 from Workspace.DegenerateStopAnalysis.navidTools.getSamples_PP_7412pass2_GenTracks import *
 from makeTable import *
 from limitCalc import *
@@ -59,6 +52,9 @@ plotList=[
                             "var":nTracks(dz=0.1,dxy=0.1, jetOpt="veto"),   'cut':"(1)"    ,'bins':[20,0,20],'weight':"weight",'min':0.1,'logy':1,'fom':True,'save':True}, 
           {"name":"nGenTracks_dz__dxy01_onlyJet",   
                             "var":nTracks(trk="GenTracks", jetOpt="veto"),   'cut':"(1)"    ,'bins':[50,0,50],'weight':"weight",'min':0.1,'logy':1,'fom':True,'save':True}, 
+
+
+
           ]
 
 plots={}

@@ -3,7 +3,6 @@ import copy, os, sys
 #spring15_inc_sample_dir = "/data/nrad/cmgTuples/postProcessed_Spring15_vasile_v1/"
  
 #sample_path = "/afs/hephy.at/data/nrad01/cmgTuples/postProcessed_7412pass2_v2"
-#sample_path = "/afs/hephy.at/data/nrad01/cmgTuples/GenTracks_v0"
 sample_path = "/afs/hephy.at/data/nrad01/cmgTuples/postProcessed_7412pass2_Preselection_v0"
 
 def makeSample(sample):
