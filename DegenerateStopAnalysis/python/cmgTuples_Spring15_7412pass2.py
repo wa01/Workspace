@@ -4,8 +4,7 @@ from CMGTools.RootTools.samples.samples_13TeV_RunIISpring15MiniAODv2 import *
 import PhysicsTools.HeppyCore.framework.config as cfg
 from Workspace.HEPHYPythonTools.xsec import xsec
 
-data_path = "/data/nrad/cmgTuples/RunII/7412pass2/RunIISpring15MiniAODv2"
-data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v3/RunIISpring15MiniAODv2/"
+data_path = "/data/nrad/cmgTuples/RunII/7412pass2_v4/RunIISpring15MiniAODv2/"
 
 
 TTJets_LO = {\
@@ -215,7 +214,83 @@ ZJetsToNuNu_HT600toInf ={\
 }
 
 
+QCD_HT200to300 = {
+"cmgComp": QCD_HT200to300   ,
+"dbsName" : QCD_HT200to300.dataset,
+"name" : "QCD_HT200to300_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT200to300_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
 
+QCD_HT300to500   ={
+"cmgComp": QCD_HT300to500   ,
+"dbsName" : QCD_HT300to500.dataset,
+"name" : "QCD_HT300to500_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT300to500_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
+
+QCD_HT500to700   ={
+"cmgComp":   QCD_HT500to700 ,
+"dbsName" : QCD_HT500to700.dataset,
+"name" : "QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
+
+
+QCD_HT700to1000   ={
+"cmgComp":  QCD_HT700to1000  ,
+"dbsName" : QCD_HT700to1000.dataset,
+"name" : "QCD_HT700to1000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT700to1000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
+
+QCD_HT1000to1500   ={
+"cmgComp": QCD_HT1000to1500   ,
+"dbsName" : QCD_HT1000to1500.dataset,
+"name" : "QCD_HT1000to1500_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT1000to1500_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"rootFileLocation":"tree.root",
+"dir": data_path,
+"treeName":"tree",
+'isData':False
+}
+
+QCD_HT1500to2000   ={
+"cmgComp":  QCD_HT1500to2000  ,
+"dbsName" : QCD_HT1500to2000.dataset,
+"name" : "QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT1500to2000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
+
+QCD_HT2000toInf   ={
+"cmgComp":  QCD_HT2000toInf  ,
+"dbsName" : QCD_HT2000toInf.dataset,
+"name" : "QCD_HT2000toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"chunkString" : "QCD_HT2000toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_RunIISpring15MiniAODv2-74X_mcRun2_asymptotic_v2-v1",
+"dir": data_path,
+"rootFileLocation":"tree.root",
+"treeName":"tree",
+'isData':False
+}
 
 
 
@@ -243,8 +318,19 @@ ZJetsHT  = [
     ZJetsToNuNu_HT600toInf
     ]
 
+QCDHT = [
 
-samples = TTJets + WJetsInc + WJetsHT +ZJetsHT
+    QCD_HT200to300,
+    QCD_HT300to500,
+    QCD_HT500to700,
+    QCD_HT700to1000,
+    QCD_HT1000to1500,
+    QCD_HT1500to2000,
+    QCD_HT2000toInf,
+
+    ]
+
+samples = TTJets + WJetsInc + WJetsHT +ZJetsHT + QCDHT
 
 for sample in samples:
 #  print sample
@@ -281,9 +367,10 @@ def getSignalSample(dir, signal):
       'dir' : dir,
       'dbsName':signal,
       'isData':False,
-      "rootFileLocation":"treeProducerSusySingleLepton/tree.root",
+      #"rootFileLocation":"treeProducerSusySingleLepton/tree.root",
+      "rootFileLocation":"tree.root",
       "treeName":"tree",
-      "skimAnalyzerDir":"skimAnalyzerCount",
+      #"skimAnalyzerDir":"skimAnalyzerCount",
       }
   else:
     print "Signal",signal,"unknown. Available: ",", ".join(allSignalStrings)
@@ -296,5 +383,5 @@ for d,s in allSignalData:
 for sample in allSignals:
     sample['xsec'] = xsec[sample['dbsName']]
     sample['cmgComp'].xSection = xsec[sample['dbsName']]
-
+    
 
